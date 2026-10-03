@@ -1,6 +1,4 @@
-# Marie Mellor
-# CSCI 665
-# hw3 morseVowel.py
+# hw5 morseVowel.py
 
 import sys
 import datetime

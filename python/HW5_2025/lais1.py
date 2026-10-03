@@ -1,6 +1,5 @@
-# lais1.py
-# Marie Mellor
-# cs 665
+# hw5 lais1.py
+
 
 import sys
 
