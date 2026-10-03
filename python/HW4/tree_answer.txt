@@ -1,0 +1,40 @@
+CS526 Homework Assignment 4
+Problem 1 (20 points) - Tree Traversals
+
+Tree 1 (general tree)
+
+                 A
+             /   |   \
+           B     C     D
+          / \          |
+         E   F         G
+         |   |
+         H   I
+
+Preorder traversal (visit node, then children left to right):
+    A, B, E, H, F, I, C, D, G
+
+Breadth-first traversal (level by level, left to right):
+    A, B, C, D, E, F, G, H, I
+
+Postorder traversal (children left to right, then node):
+    H, E, I, F, B, C, G, D, A
+
+
+Tree 2 (binary tree)
+
+                 A
+               /   \
+             B       C
+            / \       \
+           D   E       F
+            \         / \
+             G       H   I
+
+In-order traversal (left subtree, node, right subtree):
+    D, G, B, E, A, C, H, F, I
+
+Notes:
+- D has no left child, so D is visited before its right child G.
+- C has no left child, so C is visited before its right subtree
+  (H, F, I).
