@@ -1,0 +1,16 @@
+total
+add 7
+total
+delete 7
+add 10
+add 4
+add 29
+add 8
+add 2
+add 15
+add 41
+total
+add -5
+add 3
+add -2
+total

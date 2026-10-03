@@ -1,0 +1,13 @@
+count 8
+add 2
+add 4
+add 8
+add 8
+add 10
+add 8
+add 15
+count 8
+count 2
+count 15
+count 5
+count 99

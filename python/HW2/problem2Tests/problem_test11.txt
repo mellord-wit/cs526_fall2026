@@ -1,0 +1,9 @@
+append 1
+remove 1
+append
+insert x 4
+get 5
+update 1
+delete_at -1
+len 3
+append 2

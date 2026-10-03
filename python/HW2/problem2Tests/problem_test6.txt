@@ -1,0 +1,6 @@
+len
+append 12
+append 3
+len
+delete 12
+len

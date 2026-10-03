@@ -1,0 +1,8 @@
+append 12
+append 3
+append 5
+append 2
+update 0 1
+update 2 50
+update 3 20
+get 3

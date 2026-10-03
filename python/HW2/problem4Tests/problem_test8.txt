@@ -1,0 +1,8 @@
+print_list
+add 7
+print_list
+delete 7
+add 10
+add 2
+add 4
+print_list

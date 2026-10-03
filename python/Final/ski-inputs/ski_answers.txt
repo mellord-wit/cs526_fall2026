@@ -1,0 +1,3 @@
+input1 9
+input2 10
+input3 273

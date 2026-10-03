@@ -1,0 +1,8 @@
+print_list
+append 12
+append 3
+print_list
+delete 12
+print_list
+delete 3
+print_list

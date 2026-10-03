@@ -1,0 +1,90 @@
+CS526 Homework Assignment 3
+  Boston University Metropolitan College
+
+  Problem 1 (15 pts)
+  - Write a program to determine if a given string is a palindrome
+    - Input: you will be given an input file with one string per line
+    - Output: for each line output if the string is a palindrome
+    - Output: the total number of palindromes
+    - E.g.
+    - Input:   geek
+               asleelsa
+               thisisatesttsetasisiht
+    - Output:  false
+               true
+               true
+               2
+
+  Problem 2 (20 pts)
+  - Using Recursion
+    - Create a function that prints and counts the unique set of sub-strings of a given string
+    - Input: abcab
+    - Output: bca, bc, abc, cab, c, b, a, abca, ca, ab, abcab, bcab -> 12
+
+ Problem 3 (20 pts)
+  - Using Recursion
+    - Write a function that reverses a stack implemented as an array
+    - Write a function that reverses a stack implemented as a Linked-list
+    - Write a function that reverses a stack implemented as a doubly linked-list
+    - Input: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    - Output: 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+
+ Problem 4 (45 pts)
+  - A group of n Ghostbusters is battling n ghosts. Each Ghostbuster carries a proton pack
+    which shoots a steam at a ghost destroying it. A stream goes in a straight line in both directions
+    and continues when it hits the ghost. The Ghostbusters decide upon the following strategy:
+    - They will pair off with the ghosts, forming n Ghostbuster-ghost pairs and then
+      simultaneously each Ghostbuster will shoot a stream at their chosen ghost. The streams
+      are not allowed to cross so each Ghostbuster must choose a paring for which no streams
+      will cross.
+    - You can assume that there are an equal number Ghostbusters and ghosts.
+  - Create a solution which will determine if all of the Ghosts can be eliminated in a single
+    shot of the Ghostbusters by returning the string "All Ghosts: " <were|were not> " eliminated"
+  - Partial credit will be given for the design and algorithm and full credit will be given
+    for a correct working solution.
+  - I will provide a set test cases in the format:
+    - Line 1 will contain the number of Ghostbusters
+    - Lines 2-n will contain a ghostbuster, ghost paring represented as a series of letters and
+      numbers space separated with a B indicating the position of a Ghostbuster, a G indicating
+      the position of a ghost. The information following either a B or a G will be the X Y
+      coordinate of either the ghostbuster or the ghost.
+  - A sample input file might look like:
+      2
+      B 0 0 G 5 5
+      B 3 0 G 0 3
+
+======================================================================
+Submission
+======================================================================
+
+- Submit your assignment on Brightspace. Your submission is a link to
+  your git repository (for example, on GitHub).
+
+- In your repository, put this homework in ONE of the following:
+    a branch named after the homework, e.g. Homework2
+    a folder named after the homework, e.g. Homework2/
+
+- The branch or folder must contain:
+
+    Code          every source file for Problems 1-4 (answer Problem 1
+                  in your README or in a text file).
+
+    README        a README file (e.g. README.md) with these sections:
+                    Introduction     what the homework asks and what
+                                     your code does
+                    Algorithm        the heart of your solution: how your
+                                     linked lists and recursive functions
+                                     work
+                    Interesting      anything notable about your code,
+                    aspects          such as design choices, edge cases,
+                                     or trade-offs you made
+                    How to run       the commands to run each program and
+                                     its tests, e.g.
+                                       python3 problem2_driver.py < problem2Resources/problem2_basic.txt
+
+    Test files    every file you used to test your code, such as driver
+                  input files and unit tests.
+
+    Example       example runs of your code, either as text files that
+    executions    show each command and its output, or as screenshots of
+                  your code running.

@@ -1,0 +1,4 @@
+git clone git@school:<Student Git Repo>
+
+e.g.
+git clone git@school:drekaygran/andrea-granbery-cs-526.git

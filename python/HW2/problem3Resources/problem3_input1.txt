@@ -1,0 +1,11 @@
+# The values Problem 3 asks for
+ways 3
+ways 5
+ways 10
+
+
+
+# Print every climb as well as the count
+print_ways 0
+print_ways 3
+print_ways 4

@@ -1,0 +1,4 @@
+append 12
+append 3
+append 5
+append 2

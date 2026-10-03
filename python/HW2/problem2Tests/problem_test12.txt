@@ -1,0 +1,14 @@
+# Every directive in one run
+append 12
+append 3
+
+APPEND 5
+prepend 1
+insert 2 99
+get 2
+find 5
+len
+update 2 100
+print_list
+delete 100
+delete_at 0

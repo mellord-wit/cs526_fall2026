@@ -1,0 +1,10 @@
+add 1
+add 2
+add 3
+sum_middle_three
+add 4
+add 5
+sum_middle_three
+add 6
+add 7
+sum_middle_three

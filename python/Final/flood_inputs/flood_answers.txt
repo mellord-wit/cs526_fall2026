@@ -1,0 +1,41 @@
+python3 flood.py < flood_inputs/flood_1.txt
+SAFE
+4
+python3 flood.py < flood_inputs/flood_2.txt
+FLOOD
+1
+11
+python3 flood.py < flood_inputs/flood_3.txt
+SAFE
+19
+python3 flood.py < flood_inputs/flood_4.txt
+FLOOD
+7
+51
+python3 flood.py < flood_inputs/flood_5.txt
+SAFE
+207
+python3 flood.py < flood_inputs/flood_6.txt
+FLOOD
+439
+200844
+python3 flood.py < flood_inputs/flood_7.txt
+SAFE
+939866
+python3 flood.py < flood_inputs/flood_8.txt
+FLOOD
+293654
+1001542
+python3 flood.py < flood_inputs/flood_9.txt
+SAFE
+293118
+python3 flood.py < flood_inputs/flood_10.txt
+SAFE
+471404420
+python3 flood.py < flood_inputs/flood_11.txt
+SAFE
+0
+python3 flood.py < flood_inputs/flood_12.txt
+FLOOD
+3
+50

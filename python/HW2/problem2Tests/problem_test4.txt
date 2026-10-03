@@ -1,0 +1,7 @@
+append 12
+append 3
+append 5
+append 2
+get 0
+get 2
+get 3

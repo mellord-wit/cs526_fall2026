@@ -1,0 +1,15 @@
+# PyCharm / JetBrains
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Claude Code local settings
+**/.claude/settings.local.json

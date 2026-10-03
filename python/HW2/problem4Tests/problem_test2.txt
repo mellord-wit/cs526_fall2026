@@ -1,0 +1,7 @@
+add 5
+print_list
+add 1
+print_list
+add 9
+print_list
+add 7

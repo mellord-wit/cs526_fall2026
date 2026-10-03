@@ -1,0 +1,12 @@
+add 2
+add 4
+add 8
+add 10
+add 15
+delete 8
+print_list
+delete 2
+print_list
+delete 15
+print_list
+add 20

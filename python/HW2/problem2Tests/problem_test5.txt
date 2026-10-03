@@ -1,0 +1,9 @@
+append 12
+append 3
+append 5
+append 3
+find 12
+find 3
+find 42
+append hello world
+find hello world

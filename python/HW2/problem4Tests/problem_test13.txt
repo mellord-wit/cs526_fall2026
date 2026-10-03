@@ -1,0 +1,8 @@
+add 7
+median
+add 1
+median
+add 2
+median
+add 10
+median

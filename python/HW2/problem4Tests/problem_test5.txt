@@ -1,0 +1,9 @@
+add 2
+add 8
+add 8
+add 10
+delete 1
+delete 5
+delete 99
+print_list
+delete 8
