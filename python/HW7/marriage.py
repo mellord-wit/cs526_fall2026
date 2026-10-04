@@ -1,4 +1,3 @@
-# Daniel Bernard and Marie Mellor
 # The Gale-SHapley Marriage Problem
 
 # First line of input is total n men and women
