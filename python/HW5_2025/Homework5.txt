@@ -87,9 +87,6 @@ should be of the format:
 File Input: longest_seq<input file number>.txt
 Longest Sequence: <the longest sequence you computed>
 
-
-Problem 3 (50 points)
-
 File Input: longest_seq1.txt
 Longest Sequence: 4
 
