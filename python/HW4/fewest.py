@@ -1,7 +1,3 @@
-# Marie Mellor
-# CSCI 665 hw3
-# fewest.py
-
 import sys
 import datetime
 

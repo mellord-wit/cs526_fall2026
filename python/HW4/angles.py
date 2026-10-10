@@ -1,6 +1,3 @@
-# Marie Mellor
-# CSCI 665 hw3
-# angles.py
 
 import sys
 import math
