@@ -7,13 +7,118 @@ ghostbuster has to shoot. Any ghostbuster may be paired with any ghost, and all 
 eliminated if there is some one-to-one pairing in which every ghostbuster/ghost line is parallel.
 
 Algorithm:
-- In any working pairing, ghostbuster 0 is paired with some ghost j, so the shared
-  direction must be (ghost j - ghostbuster 0). That gives at most n directions to try.
-- For a direction (dx, dy), every point on the same line parallel to it has the same value
-  of dy * x - dx * y. A ghostbuster can only be paired with a ghost on its own line, so the
-  direction works if every line holds the same number of ghostbusters and ghosts.
+1. Pick the candidate directions.
+   If every ghostbuster/ghost line has to be parallel, they all share one direction. We do
+   not know that direction ahead of time, but we do know that in any working pairing,
+   ghostbuster 0 is paired with some ghost j. The line from ghostbuster 0 to ghost j then
+   points in the shared direction, so the direction must be (ghost j - ghostbuster 0) for
+   some j. Trying every ghost j gives at most n candidate directions, and if none of them
+   works, no pairing can work. (A ghost sitting exactly on ghostbuster 0 gives no
+   direction, so it is skipped.)
+
+2. Group the points into parallel lines for one direction (dx, dy).
+   Two points p and q lie on the same line parallel to (dx, dy) exactly when the step
+   q - p is a multiple of (dx, dy), which is when the cross product
+   dy * (qx - px) - dx * (qy - py) is 0. Rearranging, that is when
+   dy * px - dx * py == dy * qx - dx * qy. So the value dy * x - dx * y (line_key) is a
+   label for the line a point is on: points on the same parallel line get the same key,
+   and points on different parallel lines get different keys.
+
+3. Check that every line can be paired up.
+   A ghostbuster's line to its ghost is parallel to (dx, dy) only if the ghost is on the
+   ghostbuster's own parallel line, so pairs can never cross from one line to another.
+   That means the direction works exactly when every line holds the same number of
+   ghostbusters as ghosts. When the counts match, any pairing within a line is fine,
+   because all the points on it are already lined up, so they are paired in the order
+   they were read.
+
+Line key explained:
+   In short: select a line key equation, use it to produce a result for each
+   ghostbuster, then a result for each ghost, and check that the ghostbuster results
+   match the ghost results. That is essentially what the code does, with two details.
+
+   1. You pick a direction, not a key.
+      The direction (dx, dy) comes from ghostbuster 0 -> some ghost, and it sets the
+      equation key = dy * x - dx * y. For example, direction (1, 2) gives
+      key = 2 * x - y. Then:
+      - run every ghostbuster through the equation,
+      - run every ghost through the equation,
+      - compare the results.
+      If the comparison fails, pick the next direction (ghostbuster 0 -> the next
+      ghost), which gives a new equation, and repeat.
+
+   2. The rule is equal counts, not exactly one of each.
+      For each result value, the number of ghostbusters with that value must equal the
+      number of ghosts with that value. Ghostbusters are then paired with ghosts that
+      share their key. In the 3-pair example below every count happens to be 1, so it
+      looks like one-to-one matching, but several points can share a key when they are
+      all on the same line:
+          ghostbusters (0, 0) (1, 2), ghosts (2, 4) (3, 6)
+          direction (1, 2), key = 2 * x - y
+          All four points have key 0, so key 0 holds 2 ghostbusters and 2 ghosts. That
+          balances, and pairing (0, 0)-(2, 4) and (1, 2)-(3, 6) gives two shots that
+          are both parallel to (1, 2). Since all four points are on one line, any
+          pairing would work, so the code pairs them in the order they were read.
+
+   Why checking only the ghostbusters' side is enough:
+      The code only loops over the ghostbuster keys and never looks for a ghost whose
+      key has no ghostbuster. That is safe because there are n ghostbusters and n
+      ghosts: if every ghostbuster key has a matching count of ghosts, those keys
+      already account for all n ghosts, so no ghost can be left over.
+
+   So the full rule for one direction is:
+      Compute the key for every ghostbuster and every ghost. The direction works if,
+      for every key value, #ghostbusters = #ghosts. Then pair ghostbusters with ghosts
+      that share a key.
+
 - Integer arithmetic is used throughout, so vertical lines and rounding are not a problem.
 Trying n directions with an O(n) check each makes the solution O(n^2).
+
+Example with two ghostbusters and two ghosts (4 points):
+    B 0 0 G 3 1        ghostbuster 0 = (0, 0)   ghost 0 = (3, 1)
+    B 2 0 G 1 1        ghostbuster 1 = (2, 0)   ghost 1 = (1, 1)
+
+  Try ghost 0: direction = (3, 1) - (0, 0) = (3, 1), so line_key = 1 * x - 3 * y.
+      ghostbuster 0 (0, 0) -> 0      ghost 0 (3, 1) -> 0
+      ghostbuster 1 (2, 0) -> 2      ghost 1 (1, 1) -> -2
+    Line 0 has 1 ghostbuster and 1 ghost, but line 2 has 1 ghostbuster and no ghost,
+    so ghostbuster 1 has nothing it can shoot along this direction. Direction fails.
+
+  Try ghost 1: direction = (1, 1) - (0, 0) = (1, 1), so line_key = 1 * x - 1 * y.
+      ghostbuster 0 (0, 0) -> 0      ghost 1 (1, 1) -> 0
+      ghostbuster 1 (2, 0) -> 2      ghost 0 (3, 1) -> 2
+    Line 0 holds ghostbuster 0 and ghost 1, and line 2 holds ghostbuster 1 and ghost 0.
+    Every line balances, so the pairing is (0, 0)-(1, 1) and (2, 0)-(3, 1). Both shots
+    move by (1, 1), so they are parallel and all ghosts are eliminated.
+
+Example with three ghostbusters and three ghosts (3 pairs):
+    B 0 0 G 2 2        ghostbuster 0 = (0, 0)   ghost 0 = (2, 2)
+    B 1 0 G 4 2        ghostbuster 1 = (1, 0)   ghost 1 = (4, 2)
+    B 3 0 G 1 2        ghostbuster 2 = (3, 0)   ghost 2 = (1, 2)
+
+  Try ghost 0: direction = (2, 2) - (0, 0) = (2, 2), so line_key = 2 * x - 2 * y.
+      ghostbuster 0 (0, 0) -> 0      ghost 0 (2, 2) -> 0
+      ghostbuster 1 (1, 0) -> 2      ghost 1 (4, 2) -> 4
+      ghostbuster 2 (3, 0) -> 6      ghost 2 (1, 2) -> -2
+    Line 0 balances (ghostbuster 0 and ghost 0), but line 2 has ghostbuster 1 and no
+    ghost, so the check stops there. Direction fails.
+
+  Try ghost 1: direction = (4, 2) - (0, 0) = (4, 2), so line_key = 2 * x - 4 * y.
+      ghostbuster 0 (0, 0) -> 0      ghost 0 (2, 2) -> -4
+      ghostbuster 1 (1, 0) -> 2      ghost 1 (4, 2) -> 0
+      ghostbuster 2 (3, 0) -> 6      ghost 2 (1, 2) -> -6
+    Line 0 balances (ghostbuster 0 and ghost 1), but again line 2 has ghostbuster 1 and
+    no ghost. Direction fails.
+
+  Try ghost 2: direction = (1, 2) - (0, 0) = (1, 2), so line_key = 2 * x - 1 * y.
+      ghostbuster 0 (0, 0) -> 0      ghost 0 (2, 2) -> 2
+      ghostbuster 1 (1, 0) -> 2      ghost 1 (4, 2) -> 6
+      ghostbuster 2 (3, 0) -> 6      ghost 2 (1, 2) -> 0
+    Line 0 holds ghostbuster 0 and ghost 2, line 2 holds ghostbuster 1 and ghost 0, and
+    line 6 holds ghostbuster 2 and ghost 1. Every line balances, so the pairing is
+    (0, 0)-(1, 2), (1, 0)-(2, 2) and (3, 0)-(4, 2). All three shots move by (1, 2), so
+    they are parallel and all ghosts are eliminated. Note that none of the ghosts ends up
+    with the ghostbuster written next to it in the input.
 """
 import os
 import sys
