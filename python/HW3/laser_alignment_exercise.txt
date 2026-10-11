@@ -1,0 +1,173 @@
+CS526 In-Class Exercise: Laser Alignment
+  (worked in class using ghostbusters_shoot_any_ghost.py)
+
+  Problem
+  - A physics lab has n lasers and n targets on a flat table. Every laser must be aimed
+    at one target, and every target must be hit by exactly one laser.
+  - Unlike a fixed assignment, ANY laser may be aimed at ANY target. You choose the
+    pairing.
+  - A beam is an infinite straight line. It passes through the laser and its target and
+    keeps going forever in both directions.
+  - For the experiment to work, all n beams must be parallel to each other.
+    - Two beams that lie on the same line are allowed (they count as parallel).
+  - Write a program that reads the positions and decides whether there is a pairing of
+    lasers to targets in which every beam is parallel. If there is, print the pairing.
+
+  Input format
+  - Line 1: the number of lasers, n (n >= 1).
+  - Lines 2 through n+1: one laser and one target, in the form
+      L <x> <y> T <x> <y>
+    The laser and target on a line are NOT a pair. Each line just lists one laser
+    position and one target position.
+  - All coordinates are integers and may be negative.
+  - A beam may be vertical.
+
+  Output
+  - Exactly one of these two lines:
+      All Targets: were hit
+      All Targets: were not hit
+  - If the targets were hit, follow it with one line per pair:
+      (laser x, laser y) -> (target x, target y)
+
+  Examples
+  - Input:   2
+             L 0 0 T 3 1
+             L 2 0 T 1 1
+    Output:  All Targets: were hit
+             (0, 0) -> (1, 1)
+             (2, 0) -> (3, 1)
+
+  - Input:   3
+             L 0 0 T 2 2
+             L 1 0 T 4 2
+             L 3 0 T 1 2
+    Output:  All Targets: were hit
+             (0, 0) -> (1, 2)
+             (1, 0) -> (2, 2)
+             (3, 0) -> (4, 2)
+
+  - Input:   2
+             L 1 0 T 4 5
+             L 4 0 T 1 5
+    Output:  All Targets: were hit
+             (1, 0) -> (1, 5)
+             (4, 0) -> (4, 5)
+
+  - Input:   2
+             L 0 0 T 2 4
+             L 1 2 T 3 6
+    Output:  All Targets: were hit
+             (0, 0) -> (2, 4)
+             (1, 2) -> (3, 6)
+
+  - Input:   2
+             L 0 0 T 1 0
+             L 0 1 T 5 7
+    Output:  All Targets: were not hit
+
+  - Input:   3
+             L 0 0 T 1 1
+             L 2 0 T 3 1
+             L 5 5 T 0 3
+    Output:  All Targets: were not hit
+
+
+======================================================================
+Instructor notes (not for handout)
+======================================================================
+
+Running it
+- read_points() in ghostbusters_shoot_any_ghost.py ignores the letters on each line, so
+  the "L x y T x y" files work unchanged:
+    result, lines = ghostbusters_shoot_any_ghost_solution(file_lines)
+  Map "All Ghosts: were eliminated" to "All Targets: were hit", and print each
+  [laser, target] in lines as one pair.
+- Every example above was checked against that function.
+
+How the solution works
+- The solution has three steps:
+    1. Pick candidate directions: (target j - laser 0) for every target j.
+    2. For one direction, give every point a line key that names the parallel line it is on.
+    3. The direction works if each line key has the same number of lasers as targets.
+       Then pair lasers and targets that share a key.
+
+- Step 1: why only n directions?
+    If all the beams are parallel, they share one direction. We don't know it yet, but
+    laser 0 has to be aimed at some target j, so the shared direction must be
+    (target j - laser 0). That leaves only n directions to try, not n! pairings.
+    If none of the n directions works, no pairing can work.
+
+- Step 2: what is the line key?
+    For a direction (dx, dy), the key of a point (x, y) is
+        line_key = dy * x - dx * y
+    Moving along the direction keeps a point on the same line, and it does not change
+    the key:
+        point (x, y) moved t steps -> (x + t*dx, y + t*dy)
+        dy * (x + t*dx) - dx * (y + t*dy) = dy*x - dx*y + t*(dy*dx - dx*dy) = dy*x - dx*y
+    So points on the same parallel line get the same key, and points on different
+    parallel lines get different keys. The key is a label for the line.
+    It uses only integers, so a vertical direction (dx = 0) is no special case. A slope
+    would divide by zero.
+
+- Step 3: why do equal counts mean it works?
+    A beam is parallel to (dx, dy) only if the laser and target are on the same parallel
+    line, i.e. have the same key. So lasers can only be paired with targets that share
+    their key, and each key needs as many targets as lasers.
+
+Simple example (2 lasers, 2 targets = 4 points)
+    Input:   2
+             L 0 0 T 3 1
+             L 2 0 T 1 1
+
+    Lasers:  A = (0, 0)   B = (2, 0)
+    Targets: P = (3, 1)   Q = (1, 1)
+
+         y
+         1   .   Q   .   P
+         0   A   .   B   .
+             0   1   2   3   x
+
+    Try target P: direction = P - A = (3, 1) - (0, 0) = (3, 1)
+        line_key = 1*x - 3*y
+          A (0, 0) -> 0        P (3, 1) -> 0
+          B (2, 0) -> 2        Q (1, 1) -> -2
+        Key 0: 1 laser, 1 target   OK
+        Key 2: 1 laser, 0 targets  FAIL -> B has no target on its line.
+
+    Try target Q: direction = Q - A = (1, 1) - (0, 0) = (1, 1)
+        line_key = 1*x - 1*y
+          A (0, 0) -> 0        Q (1, 1) -> 0
+          B (2, 0) -> 2        P (3, 1) -> 2
+        Key 0: 1 laser, 1 target   OK
+        Key 2: 1 laser, 1 target   OK  -> direction works.
+
+    Pairing: A -> Q is (0, 0) -> (1, 1), and B -> P is (2, 0) -> (3, 1).
+    Both beams move by (1, 1), so they are parallel.
+
+         y
+         1   .   Q   .   P
+             . /     . /
+         0   A   .   B   .
+             0   1   2   3   x
+
+    Notice that the target listed on each laser's input line (A with P) is not the
+    target it ends up aimed at.
+
+Suggested walkthrough
+1. Brute force: try all n! pairings. Why is that too slow?
+2. Key insight: if every beam is parallel, they share ONE direction. Laser 0 must be
+   paired with some target j, so the direction is (target j - laser 0). That gives only
+   n candidate directions to try.
+3. For one direction (dx, dy), how do we tell which points share a parallel line?
+   Derive line_key = dy * x - dx * y from the cross product. Stress that it is all
+   integer math, so vertical beams (example 3) need no special case.
+4. A direction works exactly when every line_key value has as many lasers as targets.
+   Why is checking only the lasers' keys enough? (n lasers, n targets.)
+5. Complexity: n directions x O(n) per check = O(n^2).
+
+Discussion questions
+- Example 4 puts both beams on the same line. Why is any pairing on that line fine?
+- Example 6: try each of the 3 candidate directions by hand and show where each fails.
+- What if a target sits exactly on laser 0? (It gives no direction, so it is skipped.)
+- Could we choose laser 1 instead of laser 0 to generate the directions? Why does it not
+  matter which laser we pick?
