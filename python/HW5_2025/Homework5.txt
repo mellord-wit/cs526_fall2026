@@ -65,8 +65,17 @@ sequences either A or B and the even-indexed elements of X are a
 subsequence of the other sequence.
 Note a subsequence need not be consecutive elements of the original
 sequence but must maintain the relative order of the original sequence
-For example A = {1,7,2} and B = {4,8,3,9} then the answer is
-X = {4,7,9} which has a length of 3.
+For example, A = {1, 7, 2} and B = {4, 8, 3, 9}. The answer is
+X = {4, 7, 9}, which has length 3:
+    4 = b_1 (position 1)
+    7 = a_2 (position 2 > 1)
+    9 = b_4 (position 4 > 2)
+
+{1, 4, 7} is NOT valid. Its values increase, but 4 = b_1 is at
+position 1, which is not after 1 = a_1 (also position 1).
+
+
+
 
 Demonstrate you code by running your code with the provided input
 files. The input file will contain 4 input lines. The first line will
