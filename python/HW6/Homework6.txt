@@ -1,0 +1,28 @@
+Problem 1 (35 pts)
+
+• Implement a Priority Queue
+
+You are going shopping at your local store. The aisles are organized
+such that each aisle contains a specific category of item. The aisles
+are arranged from left to right. The aisles are represented by an
+array of categories e.g.
+
+    [‘dinner’, ‘lunch’, ‘breakfast’, ‘snacks’, ‘desserts’]
+
+You want to collect as many items as you can moving through the aisles
+from left to right. The store owner has some very strict rules for the
+shoppers:
+    • You have only 2 baskets to place your items in and each basket
+      can hold only a single category of item.
+    • Starting from the aisle of your choice, you must select exactly
+      one item from the aisle and place it in one of your baskets,
+      remember that you have only 2 baskets and each basket can
+      contain only one category of item.
+    • Once you reach an aisle that contains an item you are not
+      allowed to put into either of your baskets you must stop
+      shopping.
+
+
+Problem 2 (65 pts)
+
+• Implement a Heap
