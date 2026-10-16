@@ -1,0 +1,819 @@
+DYNAMIC PROGRAMMING
+CS 526 - Additional Lecture (about 60 minutes)
+
+Plain-text version of dynamic_programming_lecture.html. Each slide is
+followed by its speaker notes. The code from the slides is in
+dynamic_programming_examples.py.
+
+----------------------------------------------------------------------
+SLIDE 1 OF 23
+----------------------------------------------------------------------
+
+[CS 526 · Additional Lecture]
+
+DYNAMIC PROGRAMMING
+===================
+
+Solving big problems by remembering the answers to small ones
+
+  0 1 1 2 3 5 8 13 ?
+
+Speaker notes:
+  Welcome. Today is a one-hour lecture on dynamic programming, usually
+  shortened to DP. The row of boxes is the Fibonacci sequence. Each
+  new value is built from two values we have already stored. That
+  idea, computing an answer once and reusing it, is the whole lecture
+  in one picture. Ask the class what goes in the last box (21) and how
+  they knew so fast: they reused 8 and 13 instead of starting over.
+  Plan: about 10 minutes of motivation, about 10 on the two
+  implementation styles, a short recipe, then three worked examples
+  (coin change, knapsack, longest common subsequence), and patterns
+  and practice at the end.
+
+----------------------------------------------------------------------
+SLIDE 2 OF 23
+----------------------------------------------------------------------
+
+[The plan]
+
+TODAY’S HOUR
+============
+
+Minutes  Topic
+-------  -------------------------------------------------
+0–10     Why DP? Fibonacci and the two key properties
+10–20    Memoization (top-down) vs. tabulation (bottom-up)
+20–23    A five-step recipe for any DP problem
+23–32    Example 1: coin change
+32–44    Example 2: 0/1 knapsack
+44–53    Example 3: longest common subsequence
+53–60    Patterns, pitfalls and practice problems
+
+Speaker notes:
+  Walk through the plan quickly. Tell students every example on the
+  slides is in AdditionalLectures/dynamic_programming_examples.py, so
+  they can run it and change the inputs. The three worked examples get
+  harder on purpose: a 1-D table, then a 2-D table over items and
+  capacity, then a 2-D table over two strings.
+
+----------------------------------------------------------------------
+SLIDE 3 OF 23
+----------------------------------------------------------------------
+
+[Motivation]
+
+FIBONACCI, THE OBVIOUS WAY
+==========================
+
+    def fib(n):
+        if n <= 1:
+            return n
+        return fib(n - 1) + fib(n - 2)
+
+To compute fib(40) = 102,334,155 it makes
+
+331 million
+
+function calls. Each step up in n multiplies the work by about 1.6:
+exponential time.
+
+Speaker notes:
+  Start with code everyone has written. It is correct and it reads
+  exactly like the math definition. Ask: how long does fib(40) take?
+  In CPython it is tens of seconds; fib(50) would take hours. The
+  exact count is 331,160,281 calls for fib(40); the example file
+  prints the call counts so students can see them. The number of calls
+  is 2·F(n+1) − 1, so it grows like the golden ratio, about 1.618 to
+  the n. Ask: where is all that time going? Next slide answers it.
+
+----------------------------------------------------------------------
+SLIDE 4 OF 23
+----------------------------------------------------------------------
+
+[Where the time goes]
+
+THE SAME CALLS HAPPEN AGAIN AND AGAIN
+=====================================
+
+                          fib(5)
+                 /                    \
+             fib(4)                  [fib(3)]
+           /        \               /       \
+      [fib(3)]    {fib(2)}      {fib(2)}    fib(1)
+      /     \      /    \        /    \
+  {fib(2)} fib(1) fib(1) fib(0) fib(1) fib(0)
+   /    \
+fib(1) fib(0)
+
+  [ ] = fib(3), computed 2 times    { } = fib(2), computed 3 times
+
+15 calls for fib(5): fib(3) runs twice, fib(2) three times, fib(1)
+five times.
+
+Speaker notes:
+  This is the recursion tree for fib(5). The orange boxes are fib(3),
+  computed twice. The blue boxes are fib(2), computed three times.
+  Point at the left subtree under fib(4): the whole fib(3) subtree on
+  the right is an exact copy of work we already did on the left. The
+  tree has 15 nodes for n = 5, and every extra level roughly doubles
+  it. The key observation: there are only n + 1 different questions
+  (fib(0) to fib(n)), but we ask them exponentially many times. That
+  gap is what dynamic programming removes.
+
+----------------------------------------------------------------------
+SLIDE 5 OF 23
+----------------------------------------------------------------------
+
+[The key idea]
+
+TWO PROPERTIES MAKE A DP PROBLEM
+================================
+
+* Overlapping subproblems
+    The naive recursion solves the same smaller problem many times.
+    Fix: solve each one once and store the answer.
+
+* Optimal substructure
+    The best answer is built from the best answers to smaller
+    problems.
+    Result: we can write a recurrence.
+
+Dynamic programming = recursion + a table of remembered answers.
+
+Speaker notes:
+  These are the two properties to check for. Overlapping subproblems:
+  without it, caching gains nothing. Merge sort, for example, splits
+  into halves that never repeat, so it is divide and conquer, not DP.
+  Optimal substructure: the best solution contains best solutions to
+  its subproblems. Shortest paths have it: the best route from A to C
+  through B uses the best route from A to B. Longest simple path does
+  not, which is why it has no easy DP. The name “dynamic programming”
+  is historical: Richard Bellman chose it in the 1950s. “Programming”
+  meant planning with a table, not writing code.
+
+----------------------------------------------------------------------
+SLIDE 6 OF 23
+----------------------------------------------------------------------
+
+[Approach 1 · Top-down]
+
+MEMOIZATION: RECURSE, THEN CACHE
+================================
+
+    def fib(n, memo=None):
+        if memo is None:
+            memo = {} # new dict for each top call
+        if n in memo: # solved already?
+            return memo[n]
+        if n <= 1: # base cases
+            return n
+        memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
+        return memo[n]
+
+* O(n) time
+    Each fib(k) is computed once. fib(40) now takes 79 calls.
+
+* O(n) space
+    The memo dict plus the call stack.
+
+* Python shortcut
+    Put @functools.lru_cache on the plain recursive version.
+
+Speaker notes:
+  Memoization keeps the recursive code and adds a lookup table. Before
+  doing any work we check the table; after doing the work we store the
+  result. The recursion still happens top-down, starting from n, but
+  each subproblem is solved only once. Count: fib(40) makes 79 calls
+  instead of 331 million (each of fib(2)..fib(40) does real work once,
+  plus the cache hits). Point out memo=None: writing memo={} as a
+  default argument is a classic Python trap, because that one dict is
+  shared between all calls of the function. It happens to work here,
+  but it is a bug waiting to happen in other problems. Mention that
+  HW5’s lais1.py already used this pattern: the longest_lengths_of_a
+  and longest_lengths_of_b lists start at −1 and act as memo tables.
+  The functools.lru_cache decorator does the same caching for you on
+  any function whose arguments are hashable.
+
+----------------------------------------------------------------------
+SLIDE 7 OF 23
+----------------------------------------------------------------------
+
+[Approach 2 · Bottom-up]
+
+TABULATION: FILL A TABLE IN ORDER
+=================================
+
+    def fib(n):
+        if n <= 1:
+            return n
+        table = [0] * (n + 1) # table[i] = fib(i)
+        table[1] = 1
+        for i in range(2, n + 1): # small to large
+            table[i] = table[i - 1] + table[i - 2]
+        return table[n]
+
+* No recursion
+    A loop fills the table from the base cases up.
+
+* Same O(n) time
+    No call overhead, no recursion limit.
+
+* O(1) space is possible
+    Each cell needs only the last two, so keep two variables.
+
+Speaker notes:
+  Tabulation turns the recursion inside out. We decide in advance
+  which order to solve subproblems in, smallest first, so that
+  whenever we need table[i − 1] and table[i − 2] they are already
+  filled. Draw the table on the board: 0, 1, 1, 2, 3, 5, 8, 13 filling
+  left to right. Because each cell only looks back two places, we can
+  throw the rest of the table away. The example file has fib_two_vars:
+  prev, curr = 0, 1; then loop n times doing prev, curr = curr, prev +
+  curr; return prev. That is O(n) time and O(1) space. Saving space
+  this way is common in bottom-up DP: if row i only needs row i − 1,
+  keep two rows.
+
+----------------------------------------------------------------------
+SLIDE 8 OF 23
+----------------------------------------------------------------------
+
+[Choosing a style]
+
+TOP-DOWN VS. BOTTOM-UP
+======================
+
+                  Top-down (memoization)        Bottom-up (tabulation)
+----------------  ----------------------------  ----------------------
+How you write it  Recursion plus a cache        Loops that fill a
+                                                table
+Order of work     Set by the recursion          You choose it
+                                                explicitly
+Solves            Only subproblems it needs     Every cell in the
+                                                table
+Overhead          Calls; depth limit near 1000  None; easy to cut
+                                                space
+Use it when       The recurrence is natural     All states are needed
+
+Both give the same answers and the same big-O time. A good habit:
+write top-down first to get it right, then convert to bottom-up.
+
+Speaker notes:
+  Neither style is “the real DP”; both are. Top-down is often easier
+  to get right because it mirrors the recurrence, and it skips states
+  that are never reached. Bottom-up avoids Python’s default recursion
+  limit of 1000 frames (sys.getrecursionlimit()), so memoized
+  fib(5000) raises RecursionError while the loop version is fine.
+  Bottom-up also makes space savings visible. Suggest the workflow:
+  recurrence first, memoize to test it, then convert to a table if
+  speed or depth matters. That is about 20 minutes in; next is the
+  recipe.
+
+----------------------------------------------------------------------
+SLIDE 9 OF 23
+----------------------------------------------------------------------
+
+[The recipe]
+
+FIVE STEPS FOR ANY DP PROBLEM
+=============================
+
+* 1. Define the subproblem
+    Say in words what dp[i] or dp[i][j] means.
+
+* 2. Write the recurrence
+    Express one subproblem using smaller ones.
+
+* 3. Set the base cases
+    Answer the smallest inputs directly.
+
+* 4. Pick an order
+    Fill cells so every dependency is ready first.
+
+* 5. Read the answer
+    Find it in the table, then trace back the choices.
+
+Step 1 is the hard part. If you can say what dp[i] means in one
+sentence, the rest usually follows.
+
+Speaker notes:
+  Apply the recipe to Fibonacci out loud so students see it once on an
+  easy problem. 1: table[i] is the i-th Fibonacci number. 2: table[i]
+  = table[i − 1] + table[i − 2]. 3: table[0] = 0, table[1] = 1. 4:
+  increasing i. 5: the answer is table[n]. Stress step 1. Most wrong
+  DP solutions come from a vague subproblem. Students should write the
+  meaning of the table as a comment in their code, the way the
+  tabulation slide did. We will use these five steps, labelled, on
+  each of the next three examples.
+
+----------------------------------------------------------------------
+SLIDE 10 OF 23
+----------------------------------------------------------------------
+
+[Example 1 · Coin change]
+
+MAKE CHANGE WITH THE FEWEST COINS
+=================================
+
+Coins [1, 3, 4], as many of each as you like. Make 6.
+
+* Greedy: take the biggest coin that fits
+      4 + 1 + 1
+    3 coins. Not optimal.
+
+* DP: try every last coin
+      3 + 3
+    2 coins. Optimal.
+
+Speaker notes:
+  About 23 minutes in. Pose the problem before showing the answers and
+  ask the class for the fewest coins. Many will say 3 (4 + 1 + 1)
+  because that is what greedy does, and greedy works for US coins (1,
+  5, 10, 25). With 1, 3, 4 it fails: 3 + 3 uses only 2 coins. This is
+  the point of the example: when a greedy choice can be wrong, we need
+  to consider every choice, and DP makes that affordable. The DP idea:
+  whatever the best solution is, it has some last coin c. Remove it,
+  and what remains must be a best solution for amount − c. That is
+  optimal substructure.
+
+----------------------------------------------------------------------
+SLIDE 11 OF 23
+----------------------------------------------------------------------
+
+[Example 1 · Coin change]
+
+SUBPROBLEM, RECURRENCE, TABLE
+=============================
+
+Subproblem: dp[a] = the fewest coins that add up to exactly a.
+
+    dp[0] = 0
+    dp[a] = min( dp[a - c] + 1 ) over each coin c <= a
+    dp[6] = min(dp[5]+1, dp[3]+1, dp[2]+1) = min(3, 2, 3) = 2
+
+a          0  1  2  3  4  5  6
+---------  -  -  -  -  -  -  -
+dp[a]      0  1  2  1  1  2  2
+last coin  .  1  1  3  4  1  3
+
+Speaker notes:
+  Walk the recipe. 1, subproblem: dp[a] is the fewest coins making
+  exactly a. 2, recurrence: try each coin c as the last coin; the rest
+  costs dp[a − c]; take the minimum and add 1. 3, base case: dp[0] =
+  0, and any amount we cannot make stays at infinity. 4, order: a from
+  1 up to the target, because dp[a] only looks at smaller amounts. 5,
+  answer: dp[6] = 2. Fill the table live on the board, one column at a
+  time, asking students for each value. The “last coin” row records
+  which coin won, and it lets us rebuild the solution: from 6 take a
+  3, go to dp[3], take a 3, reach 0. So the coins are 3 + 3.
+
+----------------------------------------------------------------------
+SLIDE 12 OF 23
+----------------------------------------------------------------------
+
+[Example 1 · Coin change]
+
+COIN CHANGE IN PYTHON
+=====================
+
+    def min_coins(coins, amount):
+        INF = float("inf")
+        dp = [0] + [INF] * amount # dp[0] = 0
+        for a in range(1, amount + 1):
+            for c in coins:
+                if c <= a and dp[a - c] + 1 < dp[a]:
+                    dp[a] = dp[a - c] + 1
+        return dp[amount] if dp[amount] != INF else -1
+    
+    min_coins([1, 3, 4], 6)  # 2
+
+* Time O(A · k)
+    A amounts, each tries k coins.
+
+* Space O(A)
+    One list of length A + 1.
+
+* Impossible amounts
+    Stay at infinity, so we return −1.
+
+Speaker notes:
+  The code is the recurrence almost word for word. The outer loop is
+  the evaluation order; the inner loop tries every last coin. Using
+  infinity for “not reachable yet” means we never need a special case:
+  infinity + 1 is still infinity in Python floats. Example: coins [5,
+  10] and amount 3 returns −1. Quick variation to ask: how would you
+  count the number of ways to make the amount instead of the fewest
+  coins? Answer: replace min with a sum, set ways[0] = 1, and loop
+  over coins in the outer loop so that each combination is counted
+  once and not once per ordering. That is about 32 minutes in.
+
+----------------------------------------------------------------------
+SLIDE 13 OF 23
+----------------------------------------------------------------------
+
+[Example 2 · 0/1 knapsack]
+
+PACK THE MOST VALUE INTO CAPACITY 7
+===================================
+
+Item  Weight  Value
+----  ------  -----
+A     1       1
+B     3       4
+C     4       5
+D     5       7
+
+Each item is taken whole or left behind (0 or 1 of it).
+
+Subproblem: K[i][c] = the best value using only the first i items with
+capacity c.
+
+    skip = K[i-1][c]
+    take = K[i-1][c - w[i]] + v[i] # if w[i] <= c
+    K[i][c] = max(skip, take)
+    K[0][c] = 0 # no items, no value
+
+Speaker notes:
+  About 32 minutes in. Ask first: which items would you pack? Students
+  often grab D, the most valuable item (7), then can only add A for a
+  total of 8. The best is B + C: weight exactly 7, value 9. Greedy by
+  value per weight also fails here: A is 1.0, B 1.33, C 1.25, D 1.4,
+  so greedy takes D and then A, for 8. Now the recurrence. Consider
+  item i last. Either we skip it, and the answer is the best with the
+  first i − 1 items and the same capacity, or we take it, gaining v[i]
+  and losing w[i] of capacity. Two choices, take the better one. The
+  table now has two dimensions because the subproblem needs two
+  numbers to describe it: how many items we may use, and how much room
+  is left.
+
+----------------------------------------------------------------------
+SLIDE 14 OF 23
+----------------------------------------------------------------------
+
+[Example 2 · 0/1 knapsack]
+
+FILLING THE TABLE ROW BY ROW
+============================
+
+items \ c  0  1  2  3  4  5  6  7
+---------  -  -  -  -  -  -  -  -
+none       0  0  0  0  0  0  0  0
++A (1, 1)  0  1  1  1  1  1  1  1
++B (3, 4)  0  1  1  4  5  5  5  5
++C (4, 5)  0  1  1  4  5  6  6  9
++D (5, 7)  0  1  1  4  5  7  8  9
+
+    K[C][7] = max( skip K[B][7] = 5,  take K[B][3] + 5 = 9 ) = 9
+
+Speaker notes:
+  Fill this on the board one row at a time. Row “none” is all zeros:
+  the base case. Row +A: once capacity is at least 1, we can take A
+  for value 1. Row +B: at capacity 3 we take B for 4; at 4 we take B
+  and A for 5. The interesting cell is row +C, capacity 7, in orange.
+  Skipping C leaves the row-B value at capacity 7, which is 5. Taking
+  C uses 4 of the 7 units, leaving capacity 3, where row B says 4;
+  plus C’s value 5 gives 9. The blue cells are the two values that
+  cell compares. The last row adds D, but at capacity 7 taking D gives
+  K[C][2] + 7 = 8, which is worse than 9, so the answer stays 9. Each
+  cell looks only at the row above, so row order is a valid evaluation
+  order. Size: (n + 1) × (C + 1) cells, each O(1), so O(n·C) time.
+  Note that this is pseudo-polynomial: it depends on the numeric
+  capacity, not just the number of items.
+
+----------------------------------------------------------------------
+SLIDE 15 OF 23
+----------------------------------------------------------------------
+
+[Example 2 · 0/1 knapsack]
+
+KNAPSACK IN PYTHON
+==================
+
+    def knapsack(weights, values, cap):
+        n = len(weights)
+        K = [[0] * (cap + 1) for _ in range(n + 1)]
+        for i in range(1, n + 1):
+            w, v = weights[i - 1], values[i - 1]
+            for c in range(cap + 1):
+                K[i][c] = K[i - 1][c] # skip item i
+                if w <= c: # or take it
+                    take = K[i - 1][c - w] + v
+                    K[i][c] = max(K[i][c], take)
+        return K[n][cap]
+    
+    knapsack([1, 3, 4, 5], [1, 4, 5, 7], 7)  # 9
+
+* Time O(n · C)
+    One O(1) step per cell.
+
+* Space O(n · C)
+    Keep the whole table to recover the items.
+
+* Watch the index
+    Row i uses weights[i − 1].
+
+Speaker notes:
+  Point out the off-by-one: the table has n + 1 rows so that row 0 can
+  be the “no items” base case, which means row i describes item i − 1
+  in the Python lists. Ask: why must the inner loop read from row i −
+  1 and not row i? Because reading row i would let us take the same
+  item twice. That other version is the unbounded knapsack, where
+  every item can be reused, and it is the same code with K[i][c − w]
+  instead of K[i − 1][c − w]. If you only need the value, you can keep
+  a single 1-D list and loop c downward from cap to w; looping
+  downward is what keeps each item to one use. To list the chosen
+  items, keep the full table: next slide.
+
+----------------------------------------------------------------------
+SLIDE 16 OF 23
+----------------------------------------------------------------------
+
+[Example 2 · Step 5]
+
+TRACING BACK WHICH ITEMS WE TOOK
+================================
+
+    def chosen_items(K, weights, cap):
+        items, c = [], cap
+        for i in range(len(weights), 0, -1):
+            if K[i][c] != K[i - 1][c]: # changed
+                items.append(i - 1) # so taken
+                c -= weights[i - 1]
+        return items[::-1]
+
+D: 9 = 9 above, so skip
+
+C: 9 ≠ 5, take; c = 7 − 4 = 3
+
+B: 4 ≠ 1, take; c = 3 − 3 = 0
+
+A: 0 = 0, skip
+
+Result: B + C, weight 7, value 9
+
+Speaker notes:
+  The table stores values, not decisions, but the decisions can be
+  recovered. Start at the bottom-right cell. If K[i][c] is the same as
+  the cell straight above it, item i was not needed, so move up. If it
+  is different, item i must have been taken, so record it, subtract
+  its weight from c, and move up. Walk it on the table from the
+  previous slide: D is skipped, C is taken, capacity drops to 3, B is
+  taken, capacity drops to 0, A is skipped. This is step 5 of the
+  recipe, and the same trick works for coin change (the last-coin row)
+  and for LCS next. About 44 minutes in.
+
+----------------------------------------------------------------------
+SLIDE 17 OF 23
+----------------------------------------------------------------------
+
+[Example 3 · Longest common subsequence]
+
+LONGEST SUBSEQUENCE TWO STRINGS SHARE
+=====================================
+
+  X: B A C D B
+
+  Y: B D C B
+
+LCS = B C B, length 3. A subsequence keeps the order but may skip
+letters.
+
+Subproblem: L[i][j] = LCS length of the first i letters of X and the
+first j letters of Y.
+
+    # i = 0 or j = 0:
+    L[i][j] = 0
+    # last letters match:
+    L[i][j] = L[i-1][j-1] + 1
+    # otherwise drop one:
+    L[i][j] = max(L[i-1][j], L[i][j-1])
+
+Speaker notes:
+  About 44 minutes in. Define subsequence versus substring: a
+  substring must be contiguous, a subsequence only needs to keep the
+  order. B C B is a subsequence of BACDB (skip A and D) and of BDCB
+  (skip D). B D B also works, which shows the LCS is not always
+  unique, though its length is. Applications: diff and git compare
+  files line by line with LCS, and DNA sequence alignment uses close
+  relatives of it. The recurrence comes from looking at the last
+  letters. If they match, that letter can end the LCS, so we take 1
+  plus the LCS of both prefixes without it. If they do not match, at
+  least one of the two last letters is not in the LCS, so we drop one
+  or the other and keep the better answer.
+
+----------------------------------------------------------------------
+SLIDE 18 OF 23
+----------------------------------------------------------------------
+
+[Example 3 · Longest common subsequence]
+
+THE LCS TABLE FOR BACDB AND BDCB
+================================
+
+   .  B  D  C  B
+-  -  -  -  -  -
+.  0  0  0  0  0
+B  0  1  1  1  1
+A  0  1  1  1  1
+C  0  1  1  2  2
+D  0  1  2  2  2
+B  0  1  2  2  3
+
+* Letters match
+    Diagonal up-left, plus 1.
+
+* No match
+    The larger of the cell above and the cell to the left.
+
+* Trace back
+    From the corner, follow the bold matches: B, C, B.
+
+Speaker notes:
+  Rows are letters of X = BACDB, columns are letters of Y = BDCB, with
+  an empty-prefix row and column of zeros as the base case. Fill row
+  by row, left to right: each cell needs the cell above, the cell to
+  the left and the diagonal, all already filled. Do two cells together
+  with the class. Row C, column C: the letters match, so take the
+  diagonal (row A, column D = 1) plus 1 = 2. Row D, column C: no
+  match, so take the larger of above (2) and left (2) = 2. The answer
+  is the bottom-right cell, 3. Trace back: at a match, record the
+  letter and move diagonally; otherwise move toward the larger
+  neighbour (on a tie, pick one consistently). The bold cells are the
+  matches on the path, which spell B, C, B.
+
+----------------------------------------------------------------------
+SLIDE 19 OF 23
+----------------------------------------------------------------------
+
+[Example 3 · Longest common subsequence]
+
+LCS IN PYTHON
+=============
+
+    def lcs_length(x, y):
+        m, n = len(x), len(y)
+        L = [[0] * (n + 1) for _ in range(m + 1)]
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if x[i - 1] == y[j - 1]:
+                    L[i][j] = L[i - 1][j - 1] + 1
+                else:
+                    L[i][j] = max(L[i - 1][j], L[i][j - 1])
+        return L[m][n]
+    
+    lcs_length("BACDB", "BDCB")  # 3
+
+* Time O(m · n)
+    One O(1) step per cell.
+
+* Space O(m · n)
+    Two rows suffice for the length alone.
+
+* Brute force
+    x has 2^m subsequences: exponential.
+
+Speaker notes:
+  Same shape as knapsack: a table one bigger than the inputs in each
+  dimension, a double loop, and an off-by-one where row i means the
+  letter x[i − 1]. Contrast with brute force: a string of length m has
+  2^m subsequences, so checking each one against y is exponential,
+  while the table is m·n. For two 1,000-character strings that is one
+  million cells, instant. The example file has lcs_string, which does
+  the trace back and returns the actual subsequence. About 53 minutes
+  in.
+
+----------------------------------------------------------------------
+SLIDE 20 OF 23
+----------------------------------------------------------------------
+
+[Spotting DP]
+
+COMMON SHAPES OF DP PROBLEMS
+============================
+
+Clues: the question asks for a minimum, maximum, number of ways or is
+it possible, and every step involves a choice.
+
+State                      Examples
+-------------------------  -------------------------------------------
+dp[i] over one sequence    Fibonacci, coin change, climbing stairs,
+                           longest increasing subsequence
+dp[i][j] over two strings  LCS, edit distance, sequence alignment
+dp[i][c] items × budget    0/1 knapsack, subset sum, partition
+dp[r][c] over a grid       Unique paths, minimum path sum
+dp[i][j] over an interval  Matrix-chain order, longest palindromic
+                           subsequence
+
+Speaker notes:
+  About 53 minutes in, so move quickly through the last four slides.
+  The fastest way to find a recurrence is to recognize a shape you
+  have seen before. The table lists the common shapes and what the
+  indices mean. Interval DP, the last row, is the one we did not
+  cover: dp[i][j] describes the substring or subarray from i to j, and
+  you fill it by increasing interval length. Also mention that
+  shortest-path algorithms like Bellman-Ford and Floyd-Warshall are
+  also DP, applied to graphs.
+
+----------------------------------------------------------------------
+SLIDE 21 OF 23
+----------------------------------------------------------------------
+
+[Debugging DP]
+
+FIVE COMMON BUGS AND THEIR FIXES
+================================
+
+Bug                                     Fix
+--------------------------------------  ------------------------------
+Default memo={} shared by every call    Use memo=None, or @lru_cache
+Off-by-one: table is size n, not n + 1  Leave row 0 for the base case
+Cell read before it is filled           Check each cell’s dependencies
+                                        come first
+RecursionError on large inputs          Switch to bottom-up loops
+Assuming greedy is optimal              Look for a counterexample,
+                                        like coins [1, 3, 4]
+
+Test on tiny inputs and compare with the brute-force recursion before
+trusting the table.
+
+Speaker notes:
+  These five come up in almost every DP assignment. The mutable
+  default argument is Python-specific: def f(n, memo={}) creates one
+  dict when the function is defined, and every later call shares it.
+  Off-by-one errors come from mixing up “first i items” (table index)
+  with “item i” (list index). The dependency bug shows up as answers
+  that are too small, because the code reads zeros that have not been
+  computed yet. The best debugging habit is the last line: keep the
+  slow recursive version and compare outputs for every small input.
+  The example file does exactly this in its self-test.
+
+----------------------------------------------------------------------
+SLIDE 22 OF 23
+----------------------------------------------------------------------
+
+[Your turn]
+
+PRACTICE PROBLEMS
+=================
+
+* Unique grid paths
+    Count paths from the top-left to the bottom-right of a 3 × 7 grid,
+    moving only right or down.
+      p[r][c] = p[r-1][c] + p[r][c-1]
+    Answer: 28
+
+* Edit distance
+    Fewest inserts, deletes or substitutions to turn “kitten” into
+    “sitting”.
+    Hint: a 2-D table like LCS
+    Answer: 3
+
+* Longest increasing subsequence
+    Find its length in [10, 9, 2, 5, 3, 7, 101, 18].
+    Hint: dp[i] = longest one ending at index i
+    Answer: 4
+
+Speaker notes:
+  Give students two or three minutes to set up just steps 1 and 2 of
+  the recipe for one problem, then reveal. Grid paths: p[r][c] is the
+  number of ways to reach cell (r, c); the first row and first column
+  are all 1; for a 3 × 7 grid the answer is 28. Edit distance: d[i][j]
+  is the cost of turning the first i letters of one word into the
+  first j letters of the other; if the letters match it is
+  d[i−1][j−1], otherwise 1 + the minimum of the delete, insert and
+  substitute options; kitten to sitting is 3 (substitute k→s,
+  substitute e→i, insert g). LIS: dp[i] = 1 + the maximum dp[j] over
+  earlier j with a smaller value; one answer is 2, 3, 7, 18, length 4.
+  Solutions for all three are in dynamic_programming_examples.py.
+  These work well as an in-class lab or optional homework.
+
+----------------------------------------------------------------------
+SLIDE 23 OF 23
+----------------------------------------------------------------------
+
+[Takeaways]
+
+RECURSION + MEMORY
+==================
+
+* Check two properties
+    Overlapping subproblems and optimal substructure.
+
+* Follow the recipe
+    Subproblem, recurrence, base cases, order, answer.
+
+* Exponential to polynomial
+    Time ≈ number of states × work per state.
+
+    AdditionalLectures/dynamic_programming_examples.py
+
+Speaker notes:
+  Close with the three ideas. First, DP applies when subproblems
+  repeat and the best answer is built from best sub-answers. Second,
+  the five-step recipe; step 1, defining the subproblem in words, is
+  where to spend your time. Third, to estimate the running time, count
+  the states (cells in the table) and multiply by the work per state:
+  n for Fibonacci, A·k for coins, n·C for knapsack, m·n for LCS. Point
+  students to the example file: python3
+  dynamic_programming_examples.py runs every example, prints the call
+  counts and the tables, and checks the DP answers against brute
+  force. Take questions.
