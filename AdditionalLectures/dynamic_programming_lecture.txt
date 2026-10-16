@@ -3,7 +3,10 @@ CS 526 - Additional Lecture (about 60 minutes)
 
 Plain-text version of dynamic_programming_lecture.html. Each slide is
 followed by its speaker notes. The code from the slides is in
-dynamic_programming_examples.py.
+dynamic_programming_examples.py. A discussion of multidimensional
+dynamic programming follows slide 19 as an optional extension. It
+includes space optimization techniques and how to handle complex
+constraints.
 
 ----------------------------------------------------------------------
 SLIDE 1 OF 23
@@ -680,6 +683,824 @@ Speaker notes:
   million cells, instant. The example file has lcs_string, which does
   the trace back and returns the actual subsequence. About 53 minutes
   in.
+
+----------------------------------------------------------------------
+DISCUSSION: MULTIDIMENSIONAL DYNAMIC PROGRAMMING
+----------------------------------------------------------------------
+
+[Extension after slide 19 · sections 1-6 about 15 minutes,
+ sections 7-8 about 30 minutes more]
+
+This discussion builds on the knapsack and LCS tables. Use it right
+after slide 19 if time allows, or as the start of a follow-up class.
+Sections 1-6 cover tables with several indices. Section 7 covers
+techniques for saving space, and section 8 covers complex constraints:
+how to tweak the state definition and how to make transitions
+faster. The code below is self-contained and has been checked against
+brute force.
+
+1. WHAT "DIMENSION" MEANS
+=========================
+
+The dimension of a DP is the number of indices needed to name one
+subproblem. Each index is a state variable: one piece of information
+you must know in order to finish the problem from that point.
+
+Problem                    State        Dimensions
+-------------------------  -----------  ------------------------------
+Fibonacci, coin change     dp[i]        1
+0/1 knapsack               K[i][c]      2 (items used, room left)
+LCS of two strings         L[i][j]      2 (prefix of x, prefix of y)
+LCS of three strings       L[i][j][k]   3
+Knapsack, weight + volume  K[i][w][v]   3
+Floyd-Warshall paths       d[k][i][j]   3
+Traveling salesperson      dp[mask][j]  2, but mask has 2^n values
+
+Everything in the lecture so far was 1-D or 2-D. Nothing changes in
+the method when there are more indices: the five-step recipe is the
+same. What changes is how you choose the state, how big the table
+gets, and what order to fill it in.
+
+2. CHOOSING THE STATE
+=====================
+
+Ask this question: "If I stopped halfway, what would I have to write
+down so that someone else could finish the job optimally?" Each
+independent item on that list becomes one dimension.
+
+Example: in 0/1 knapsack, after deciding about the first i items, the
+best way to finish depends only on i and on the capacity that is
+left. It does not depend on which items were chosen. So (i, c) is
+enough. Add a volume limit, and the remaining volume matters too, so
+the state grows to (i, w, v).
+
+A test for a missing dimension: if two different histories reach the
+same state but need different decisions from there on, the state is
+missing a piece of information.
+
+3. COST: COUNT THE CELLS
+========================
+
+    time  = (number of states) x (work per state)
+    space = (number of states), often reducible (section 7)
+
+The number of states is the product of the ranges of the indices.
+
+* LCS of three strings of length 100
+    101 x 101 x 101 = about 1 million cells, O(1) work each.
+* Knapsack with n = 100 items, W = 1000, V = 1000
+    101 x 1001 x 1001 = about 100 million cells: slow in Python.
+
+Every new dimension multiplies the table size by its range. This is
+the "curse of dimensionality": add only the dimensions you need.
+
+4. FILL ORDER WITH SEVERAL INDICES
+==================================
+
+Each cell may read only cells that are already filled. The general
+rule: find an order of the states so that every arrow in the
+recurrence points backward to a state that has been computed.
+
+* Every index only decreases (LCS, knapsack)
+    Nested loops with each index increasing work, in any nesting
+    order.
+* Interval DP, dp[i][j] over x[i..j]
+    A cell depends on shorter intervals, so loop over the interval
+    length first, then the start i.
+* Floyd-Warshall
+    The k loop ("may use cities 0..k as stops") must be outermost.
+* Memoization
+    Sidesteps the question: the recursion discovers the order. With
+    many dimensions it is often the easiest correct first version.
+
+5. WORKED EXAMPLE: LCS OF THREE STRINGS
+=======================================
+
+Step 1, subproblem: L[i][j][k] = length of the longest subsequence
+common to a[:i], b[:j] and c[:k].
+
+Steps 2 and 3, recurrence and base case:
+
+    # i = 0 or j = 0 or k = 0:
+    L[i][j][k] = 0
+    # all three last letters equal:
+    L[i][j][k] = L[i-1][j-1][k-1] + 1
+    # otherwise drop the last letter of one string:
+    L[i][j][k] = max(L[i-1][j][k], L[i][j-1][k], L[i][j][k-1])
+
+Step 4, order: i, j and k all increasing (every dependency has
+smaller indices). Step 5, answer: L[p][q][r].
+
+    def lcs3(a, b, c):
+        p, q, r = len(a), len(b), len(c)
+        L = [[[0] * (r + 1) for _ in range(q + 1)]
+             for _ in range(p + 1)]
+        for i in range(1, p + 1):
+            for j in range(1, q + 1):
+                for k in range(1, r + 1):
+                    if a[i - 1] == b[j - 1] == c[k - 1]:
+                        L[i][j][k] = L[i - 1][j - 1][k - 1] + 1
+                    else:
+                        L[i][j][k] = max(L[i - 1][j][k],
+                                         L[i][j - 1][k],
+                                         L[i][j][k - 1])
+        return L[p][q][r]
+
+    lcs3("BACDB", "BDCB", "BCDB")  # 3  (BCB or BDB)
+
+The table has 6 x 5 x 5 = 150 cells: time and space O(p·q·r).
+
+The same thing top-down, with the cache keyed by (i, j, k):
+
+    from functools import lru_cache
+
+    def lcs3_memo(a, b, c):
+        @lru_cache(maxsize=None)
+        def L(i, j, k):
+            if i == 0 or j == 0 or k == 0:
+                return 0
+            if a[i - 1] == b[j - 1] == c[k - 1]:
+                return L(i - 1, j - 1, k - 1) + 1
+            return max(L(i - 1, j, k), L(i, j - 1, k), L(i, j, k - 1))
+        return L(len(a), len(b), len(c))
+
+Why not run 2-string LCS twice? Because the first LCS may be the wrong
+one. With a = "AB", b = "BA", c = "B": the LCS of a and b can be "A"
+or "B". If it picks "A", comparing with c gives 0, but the true answer
+is 1 ("B"). The third dimension is needed to keep all the options
+open.
+
+6. WORKED EXAMPLE: KNAPSACK WITH TWO LIMITS
+===========================================
+
+Use the lecture's items again, and give each one a volume:
+
+Item  Weight  Volume  Value
+----  ------  ------  -----
+A     1       4       1
+B     3       1       4
+C     4       3       5
+D     5       2       7
+
+Subproblem: K[i][w][v] = the best value using only the first i items
+with weight at most w and volume at most v.
+
+    skip = K[i-1][w][v]
+    take = K[i-1][w - wt[i]][v - vol[i]] + val[i]   # if both fit
+    K[i][w][v] = max(skip, take)
+
+    def knapsack2(weights, volumes, values, W, V):
+        n = len(weights)
+        K = [[[0] * (V + 1) for _ in range(W + 1)]
+             for _ in range(n + 1)]
+        for i in range(1, n + 1):
+            wt, vol = weights[i - 1], volumes[i - 1]
+            val = values[i - 1]
+            for w in range(W + 1):
+                for v in range(V + 1):
+                    K[i][w][v] = K[i - 1][w][v]
+                    if wt <= w and vol <= v:
+                        take = K[i - 1][w - wt][v - vol] + val
+                        K[i][w][v] = max(K[i][w][v], take)
+        return K[n][W][V]
+
+    knapsack2([1, 3, 4, 5], [4, 1, 3, 2], [1, 4, 5, 7], 7, 4)  # 9
+    knapsack2([1, 3, 4, 5], [4, 1, 3, 2], [1, 4, 5, 7], 7, 3)  # 7
+
+With volume limit 4, B + C still fits (weight 7, volume 4), value 9.
+With volume limit 3, B + C is too bulky, and the best is D alone,
+value 7. One extra constraint, one extra dimension: O(n·W·V) time.
+
+7. SPACE OPTIMIZATION TECHNIQUES
+================================
+
+A full table is the easiest way to get a DP right, and you need it
+for trace back. Once the answers are correct, the table can often be
+made much smaller. Every technique in this section starts from one
+question:
+
+    Which earlier cells does a cell read?
+
+Call that set the cell's dependency window. A value that no remaining
+cell will ever read can be thrown away.
+
+7.1 Keep a few variables (a fixed-size window)
+----------------------------------------------
+
+If dp[i] reads only dp[i-1] and dp[i-2], two variables are enough.
+fib_two_vars on slide 7 does this. Another example is the largest sum
+of elements with no two adjacent ones chosen:
+
+    def max_non_adjacent(nums):
+        take, skip = 0, 0   # best so far with / without the last one
+        for x in nums:
+            take, skip = skip + x, max(take, skip)
+        return max(take, skip)
+
+    max_non_adjacent([2, 7, 9, 3, 1])  # 12  (2 + 9 + 1)
+
+O(n) space becomes O(1). The tuple assignment matters: both new
+values are computed from the old ones before either variable
+changes. Writing take = skip + x on its own line first would feed
+the new take into the max on the next line.
+
+7.2 Rolling rows (two layers)
+-----------------------------
+
+If row i reads only row i - 1, keep two rows and swap them.
+
+    def lcs_two_rows(x, y):
+        if len(y) > len(x):
+            x, y = y, x         # keep the rows as short as possible
+        prev = [0] * (len(y) + 1)
+        for i in range(1, len(x) + 1):
+            curr = [0] * (len(y) + 1)
+            for j in range(1, len(y) + 1):
+                if x[i - 1] == y[j - 1]:
+                    curr[j] = prev[j - 1] + 1
+                else:
+                    curr[j] = max(prev[j], curr[j - 1])
+            prev = curr
+        return prev[len(y)]
+
+    lcs_two_rows("BACDB", "BDCB")  # 3
+
+Space drops from O(m·n) to O(min(m, n)). The swap on the first lines
+is a technique of its own: put the shorter sequence along the row.
+For strings of length 1,000,000 and 100, that is two rows of 101
+cells instead of two rows of 1,000,001.
+
+A common variant allocates the two rows once and indexes them with
+i % 2, as in L[i % 2][j]. It does the same thing without allocating
+a new list on every pass.
+
+7.3 One row, updated in place
+-----------------------------
+
+Sometimes a single row is enough, as long as you know which cells
+have already been overwritten in the current pass. The loop direction
+decides that.
+
+0/1 knapsack reads best[c - w] from the PREVIOUS item's row. Looping
+c downward means best[c - w] has not been updated for the current
+item yet, so it still holds the old value:
+
+    def knapsack_1d(weights, values, cap):
+        best = [0] * (cap + 1)
+        for w, v in zip(weights, values):
+            for c in range(cap, w - 1, -1):     # downward
+                best[c] = max(best[c], best[c - w] + v)
+        return best[cap]
+
+Loop upward instead, and best[c - w] may already include the current
+item, so the item can be used again. That is exactly the unbounded
+knapsack, where reuse is allowed:
+
+    def knapsack_unbounded(weights, values, cap):
+        best = [0] * (cap + 1)
+        for w, v in zip(weights, values):
+            for c in range(w, cap + 1):         # upward
+                best[c] = max(best[c], best[c - w] + v)
+        return best[cap]
+
+    knapsack_1d([2], [3], 4)         # 3: the item once
+    knapsack_unbounded([2], [3], 4)  # 6: the item twice
+
+The loop body is the same; only the direction differs, and the two
+versions solve different problems. When converting a 2-D table to
+one row, draw the arrows: if a cell reads cells to its left in the
+OLD row, loop from right to left.
+
+LCS in one row needs one extra variable, because it reads the
+diagonal L[i-1][j-1], which was overwritten one step earlier:
+
+    def lcs_one_row(x, y):
+        row = [0] * (len(y) + 1)
+        for i in range(1, len(x) + 1):
+            diag = 0                    # L[i-1][j-1]
+            for j in range(1, len(y) + 1):
+                saved = row[j]          # L[i-1][j], about to change
+                if x[i - 1] == y[j - 1]:
+                    row[j] = diag + 1
+                else:
+                    row[j] = max(row[j], row[j - 1])
+                diag = saved
+        return row[len(y)]
+
+    lcs_one_row("BACDB", "BDCB")  # 3
+
+7.4 Dropping a dimension from a 3-D table
+-----------------------------------------
+
+The same idea works one level up. In lcs3, layer i reads only layer
+i - 1, so two 2-D layers are enough: O(q·r) space instead of
+O(p·q·r).
+
+    def lcs3_two_layers(a, b, c):
+        q, r = len(b), len(c)
+        prev = [[0] * (r + 1) for _ in range(q + 1)]
+        for i in range(1, len(a) + 1):
+            curr = [[0] * (r + 1) for _ in range(q + 1)]
+            for j in range(1, q + 1):
+                for k in range(1, r + 1):
+                    if a[i - 1] == b[j - 1] == c[k - 1]:
+                        curr[j][k] = prev[j - 1][k - 1] + 1
+                    else:
+                        curr[j][k] = max(prev[j][k], curr[j - 1][k],
+                                         curr[j][k - 1])
+            prev = curr
+        return prev[q][r]
+
+Floyd-Warshall goes further and keeps a single 2-D table, updated in
+place. That is safe because pass k never changes row k or column k:
+d[i][k] + d[k][k] is just d[i][k], since d[k][k] = 0.
+
+7.5 Store only the reachable states
+-----------------------------------
+
+A memo dict stores only the states the recursion actually visits.
+When most of a big table can never be reached, that is far smaller
+than a full list. The bottom-up version keeps each layer as a set or
+dict of the states that exist:
+
+    def reachable_sums(nums):
+        sums = {0}
+        for x in nums:
+            sums |= {s + x for s in sums}
+        return sums
+
+    reachable_sums([100, 250, 400])
+    # {0, 100, 250, 350, 400, 500, 650, 750}: 8 states, not 751
+
+The trade-off is speed per state: a dict lookup is several times
+slower than a list index. Use it when the table is sparse.
+
+7.6 Getting the choices back without the full table
+---------------------------------------------------
+
+Rolling rows lose the trace back of step 5. There are three ways to
+recover it.
+
+* Keep only the decisions, compactly
+    Store one byte per cell (took the item or not) in a bytearray,
+    and keep the values in a single row. A list slot holds an 8-byte
+    reference (plus the int it points to), so this is about 8 times
+    smaller than keeping all the values.
+
+        def knapsack_with_items(weights, values, cap):
+            n = len(weights)
+            best = [0] * (cap + 1)
+            took = [bytearray(cap + 1) for _ in range(n)]
+            for i in range(n):
+                w, v = weights[i], values[i]
+                for c in range(cap, w - 1, -1):
+                    if best[c - w] + v > best[c]:
+                        best[c] = best[c - w] + v
+                        took[i][c] = 1
+            items, c = [], cap
+            for i in range(n - 1, -1, -1):
+                if took[i][c]:
+                    items.append(i)
+                    c -= weights[i]
+            return best[cap], items[::-1]
+
+        knapsack_with_items([1, 3, 4, 5], [1, 4, 5, 7], 7)
+        # (9, [1, 2]): items B and C
+
+* Checkpoints
+    Save every s-th row while filling the table forward. To trace
+    back, recompute the rows between two checkpoints from the earlier
+    one. With s about the square root of the number of rows, this
+    uses O(sqrt(m) · n) space for about twice the time.
+* Divide and conquer (Hirschberg's algorithm)
+    For LCS and edit distance, compute the middle row of the table
+    from the top and again from the bottom (on the reversed strings).
+    The best place for the answer to cross the middle row splits the
+    problem into two halves, which are solved the same way. The
+    result is an actual LCS in O(m·n) time but only O(min(m, n))
+    space. Alignment tools for very long DNA sequences use this idea.
+
+7.7 Summary
+-----------
+
+Technique         Use it when                         Space
+----------------  ----------------------------------  ---------------
+Few variables     dp[i] reads a fixed number back     O(1)
+Two rows          row i reads only row i - 1          one row x 2
+One row           and you pick the loop direction     one row
+Shorter axis      two sequences of unequal length     O(min(m, n))
+Two layers        a 3-D layer reads only the last     2-D layer x 2
+Reachable states  most of the table is unreachable    states visited
+Decision bytes    you need trace back, low memory     1 byte per cell
+Hirschberg        you need the LCS of huge strings    O(min(m, n))
+
+A good order of work: get the full-table version right, keep it as a
+test oracle, then shrink the space and check that the answers match.
+
+8. HANDLING COMPLEX CONSTRAINTS
+===============================
+
+Real problems add rules: take at most k of something, never two in a
+row, wait a day after selling, a capacity of a billion, numbers that
+can be negative. There are two levers for handling them.
+
+* Part A, tweak the state definition
+    Make the state record what the rule depends on, or reshape it so
+    the table stays small.
+* Part B, optimize the state transitions
+    Keep the state, but make each transition cheaper, so that
+    (number of states) x (work per state) goes down.
+
+PART A: TWEAKING THE STATE DEFINITION
+-------------------------------------
+
+8.1 A counter dimension for "at most k" rules
+.............................................
+
+If a rule limits how many times something may happen, add an index
+that counts it. Knapsack with at most m items: best[j][c] = the best
+value using at most j items with weight at most c.
+
+    def knapsack_max_items(weights, values, cap, m):
+        best = [[0] * (cap + 1) for _ in range(m + 1)]
+        for w, v in zip(weights, values):
+            for j in range(m, 0, -1):           # downward, as in 7.3
+                for c in range(cap, w - 1, -1):
+                    take = best[j - 1][c - w] + v
+                    best[j][c] = max(best[j][c], take)
+        return best[m][cap]
+
+    knapsack_max_items([1, 3, 4, 5], [1, 4, 5, 7], 7, 1)  # 7: D
+    knapsack_max_items([1, 3, 4, 5], [1, 4, 5, 7], 7, 2)  # 9: B + C
+
+The item index has already been rolled away (section 7.3), so the
+"3-D" table is stored as 2-D. Both the count loop and the capacity
+loop run downward, so each item is used at most once.
+
+8.2 A small "mode" dimension for rules about neighbors
+......................................................
+
+If a rule depends on what happened at the previous step, add an index
+with a few values that describe the recent past. Paint a row of
+houses so that no two neighbors have the same color, at the lowest
+total cost:
+
+    def paint_houses(cost):
+        prev = [0] * len(cost[0])     # prev[c]: cheapest, ends in c
+        for row in cost:
+            curr = []
+            for c in range(len(row)):
+                others = [prev[d] for d in range(len(row)) if d != c]
+                curr.append(row[c] + min(others))
+            prev = curr
+        return min(prev)
+
+    paint_houses([[17, 2, 17], [16, 16, 5], [14, 3, 19]])
+    # 10: colors 1, 2, 1 (from 0) cost 2 + 5 + 3
+
+The state is (house, color of that house). In general, write the rule
+as a small state machine. Each mode is one value of the new index,
+and each allowed arrow between modes is a transition. Stock trading
+with a one-day cooldown, for example, has the modes "holding",
+"just sold" and "resting". max_non_adjacent in 7.1 is the same idea
+with two modes, take and skip.
+
+8.3 Swap the roles of index and value
+.....................................
+
+If one index has a huge range, look for another quantity with a
+small range and make that the index. In knapsack with a capacity of
+a billion, a capacity index is hopeless. If the values are small,
+index by value instead: least[t] = the smallest weight that reaches a
+total value of exactly t.
+
+    def knapsack_by_value(weights, values, cap):
+        INF = float("inf")
+        total = sum(values)
+        least = [0] + [INF] * total
+        for w, v in zip(weights, values):
+            for t in range(total, v - 1, -1):
+                least[t] = min(least[t], least[t - v] + w)
+        return max(t for t in range(total + 1) if least[t] <= cap)
+
+    knapsack_by_value([1, 3, 4, 5], [1, 4, 5, 7], 7)          # 9
+    knapsack_by_value([10**9, 2 * 10**9], [3, 5], 2 * 10**9)  # 5
+
+The second call has capacity 2,000,000,000, but its table has only
+sum(values) + 1 = 9 cells. The running time is O(n · sum of values)
+instead of O(n · capacity).
+
+8.4 Shift the index when values can be negative
+...............................................
+
+Put a + or - in front of each number so that the total equals a
+target. Partial sums range from -S to S, where S is the sum of the
+numbers. List indices must not be negative, so store sum s at index
+s + S:
+
+    def target_sum_ways(nums, target):
+        S = sum(nums)
+        if abs(target) > S:
+            return 0
+        ways = [0] * (2 * S + 1)     # ways[s + S]: ways to reach s
+        ways[S] = 1
+        for x in nums:
+            new = [0] * (2 * S + 1)
+            for s in range(2 * S + 1):
+                if ways[s]:
+                    new[s + x] += ways[s]
+                    new[s - x] += ways[s]
+            ways = new
+        return ways[target + S]
+
+    target_sum_ways([1, 1, 1, 1, 1], 3)  # 5
+
+Be careful in Python: dp[-1] does not raise an error, it silently
+reads the LAST element. A forgotten offset gives wrong answers, not a
+crash. A dict keyed by the real sum is the other way out.
+
+8.5 Drop state variables that can be computed
+.............................................
+
+If one state variable can be computed from the others, remove it.
+Two people walk from the top-left to the bottom-right corner of a
+grid at the same time, each moving one step right or down per turn.
+The obvious state is (r1, c1, r2, c2): 4-D. But after t turns,
+r + c = t for both people, so (t, r1, r2) determines the rest: 3-D,
+and a factor of n smaller.
+
+A related trick is a band. Edit distance with at most k edits only
+ever needs cells with |i - j| <= k, because any other cell already
+costs more than k. Filling only that diagonal band takes O(n · k)
+time instead of O(n^2).
+
+8.6 Record a set as a bitmask
+.............................
+
+If a rule depends on WHICH items have been used, not just how many,
+the state must record a set. For small n, store it as the bits of an
+integer, as in the traveling salesperson problem (section 9).
+
+8.7 Forbid states instead of adding dimensions
+..............................................
+
+A rule that only rules out some states does not need a new index.
+Give the forbidden states an impossible value: infinity for a
+minimum, minus infinity for a maximum, or 0 for a count. A blocked
+cell in a grid-paths problem has 0 paths.
+
+The base case is where this kind of tweak most often goes. Knapsack
+asks for weight AT MOST c. To require the knapsack to be EXACTLY
+full, change only the initial row:
+
+    best = [0] * (cap + 1)                  # at most c
+    best = [0] + [float("-inf")] * cap      # exactly c
+
+With -inf, a capacity can only reach a finite value by being built
+up from best[0] one exact item at a time.
+
+PART B: OPTIMIZING STATE TRANSITIONS
+------------------------------------
+
+The cost of a DP is (number of states) x (work per state). If dp[i]
+looks back at k earlier states, the total is O(n · k). Many
+transitions are a sum, minimum or maximum over a range of earlier
+states, and each of these has a faster way.
+
+8.8 Prefix sums for a sum over a range
+......................................
+
+You can climb 1, 2, ..., or k stairs at a time. Then ways[i] is the
+sum of ways[i-k] through ways[i-1]: O(n · k) if you add them up each
+time. A prefix-sum array gives each range sum in O(1):
+
+    def climb_ways(n, k):
+        ways = [0] * (n + 1)
+        ways[0] = 1
+        prefix = [0] * (n + 2)   # prefix[i] = ways[0] + ... ways[i-1]
+        prefix[1] = 1
+        for i in range(1, n + 1):
+            ways[i] = prefix[i] - prefix[max(0, i - k)]
+            prefix[i + 1] = prefix[i] + ways[i]
+        return ways[n]
+
+    climb_ways(10, 3)  # 274
+
+The time is O(n) for any k.
+
+8.9 A monotonic deque for a maximum over a sliding window
+.........................................................
+
+Start on the first square of a row of numbers and jump 1 to k squares
+at a time until you reach the last one, maximizing the sum of the
+squares you land on. Then dp[i] = nums[i] + the maximum of dp[i-k]
+through dp[i-1]. Keep a deque of indices whose dp values decrease
+from front to back. Its front is always the maximum of the window:
+
+    from collections import deque
+
+    def max_jump_score(nums, k):
+        dp = [0] * len(nums)
+        dp[0] = nums[0]
+        window = deque([0])        # indices, dp values decreasing
+        for i in range(1, len(nums)):
+            while window[0] < i - k:
+                window.popleft()   # fell out of the window
+            dp[i] = nums[i] + dp[window[0]]
+            while window and dp[window[-1]] <= dp[i]:
+                window.pop()       # can never be the maximum again
+            window.append(i)
+        return dp[-1]
+
+    max_jump_score([1, -1, -2, 4, -7, 3], 2)  # 7  (1 - 1 + 4 + 3)
+
+Each index enters and leaves the deque at most once, so the total
+time is O(n) instead of O(n · k). Use the same structure for a
+minimum by flipping the comparison.
+
+8.10 Binary search over a sorted helper array
+.............................................
+
+The slow LIS takes O(n^2): dp[i] = 1 + the largest dp[j] over j < i
+with nums[j] < nums[i]. Redefine the state instead: tails[L] = the
+smallest value that can end an increasing subsequence of length
+L + 1. The list tails is always sorted, so each new number is placed
+with a binary search:
+
+    from bisect import bisect_left
+
+    def lis_length(nums):
+        tails = []
+        for x in nums:
+            pos = bisect_left(tails, x)
+            if pos == len(tails):
+                tails.append(x)
+            else:
+                tails[pos] = x
+        return len(tails)
+
+    lis_length([10, 9, 2, 5, 3, 7, 101, 18])  # 4
+
+The time is O(n log n). This uses both levers: the state swaps index
+and value (length as the index, as in 8.3), which is what makes the
+fast binary-search transition possible.
+
+8.11 A running best instead of rescanning
+.........................................
+
+If the range is "every earlier state", with no other condition, keep
+the best value seen so far in one variable. To buy a stock once and
+sell it later for the largest profit:
+
+    def best_profit(prices):
+        lowest, best = float("inf"), 0
+        for p in prices:
+            best = max(best, p - lowest)
+            lowest = min(lowest, p)
+        return best
+
+    best_profit([7, 1, 5, 3, 6, 4])  # 5  (buy at 1, sell at 6)
+
+The O(n^2) scan of every buy day becomes O(n).
+
+8.12 Split repeated items into power-of-two bundles
+...................................................
+
+In the bounded knapsack, item i can be taken up to count[i] times.
+Treating it as count[i] separate 0/1 items costs O(count) per item.
+Instead, split the copies into bundles of 1, 2, 4, ... plus a
+remainder. Any number of copies from 0 to count can be made from
+those bundles, so O(log count) bundles are enough:
+
+    def bounded_knapsack(weights, values, counts, cap):
+        best = [0] * (cap + 1)
+        for w, v, left in zip(weights, values, counts):
+            size = 1
+            while left > 0:
+                take = min(size, left)   # one bundle of take copies
+                bw, bv = take * w, take * v
+                for c in range(cap, bw - 1, -1):
+                    best[c] = max(best[c], best[c - bw] + bv)
+                left -= take
+                size *= 2
+        return best[cap]
+
+    bounded_knapsack([3], [5], [10], 20)  # 30: six copies
+
+The 10 copies become bundles of 1, 2, 4 and 3: four 0/1 items
+instead of ten.
+
+8.13 Advanced optimizations (names to recognize)
+................................................
+
+These need a proof that their condition holds, which is beyond this
+course. They are worth recognizing by name.
+
+* Convex hull trick
+    For transitions of the form min over j of (a[j] · x[i] + b[j]),
+    which is a minimum over a set of lines.
+* Knuth's optimization
+    For interval DPs whose best split point moves monotonically,
+    such as the optimal binary search tree: O(n^3) becomes O(n^2).
+* Divide-and-conquer optimization
+    For dp[i] = min over j of cost(j, i), when the best j never
+    decreases as i grows.
+
+8.14 A checklist for a new constrained problem
+..............................................
+
+1. Write the plain recurrence and ignore the hard rule at first.
+2. For each rule, ask what it depends on.
+   * Does it forbid some states? Use an impossible value (8.7).
+   * Does it count something? Add a counter (8.1).
+   * Does it depend on the previous step? Add a mode (8.2).
+   * Does it depend on a set? Use a bitmask (8.6).
+3. Count the states. If one index has a huge range, swap index and
+   value (8.3), or drop variables that can be computed (8.5).
+4. Look at the inner loop of each transition.
+   * A sum over a range: prefix sums (8.8).
+   * A max or min over a sliding range: a monotonic deque (8.9).
+   * A search in a sorted helper array: binary search (8.10).
+   * Every earlier state: a running best (8.11).
+5. Only then shrink the space (section 7), and check the answers
+   against the full-table version.
+
+9. WHEN ONE DIMENSION IS EXPONENTIAL: BITMASK DP
+================================================
+
+Sometimes the state has to record a set. The traveling salesperson
+problem asks for the shortest tour that visits n cities once each.
+
+    dp[mask][j] = shortest path that starts at city 0, visits exactly
+                  the cities in the set mask, and ends at city j
+
+Here mask is an integer whose bits mark the visited cities, so this
+dimension has 2^n values. There are 2^n · n states and each tries n
+next cities: O(2^n · n^2) time. That is still exponential, but for
+n = 20 it is about 400 million steps, compared with 19! (about
+1.2 x 10^17) possible orderings for brute force.
+
+10. PYTHON PITFALLS WITH MULTIDIMENSIONAL TABLES
+================================================
+
+* Aliased rows
+    [[0] * 3] * 2 makes two references to the SAME row:
+
+        bad = [[0] * 3] * 2
+        bad[0][0] = 9        # bad  is [[9, 0, 0], [9, 0, 0]]
+        good = [[0] * 3 for _ in range(2)]
+        good[0][0] = 9       # good is [[9, 0, 0], [0, 0, 0]]
+
+    Build every level except the innermost with a comprehension.
+* Index order
+    Pick one order (L[i][j][k]) and use it in the allocation, the
+    loops and the recurrence. Mixing up j and k is easy in 3-D.
+* Off-by-one in every dimension
+    Each index needs size n + 1 for its base case, and row i refers
+    to item or letter i - 1.
+* Memory
+    A Python list slot holds an 8-byte reference, so a table of 100
+    million cells needs close to 1 GB. Reduce dimensions (section 7)
+    or use memoization when only a few states are reachable.
+
+11. PRACTICE
+============
+
+* Exactly k items with a given sum
+    Count the ways to choose exactly k numbers from a list that add
+    up to S. State: dp[i][j][s] = ways using the first i numbers,
+    choosing j of them, with sum s.
+    Check: from [1, 2, 3, 4, 5], choosing 2 that sum to 6 gives 2
+    ways ({1, 5} and {2, 4}).
+* Houses on a circle
+    The largest sum with no two adjacent numbers chosen, where the
+    first and last numbers also count as adjacent. Hint: reuse
+    max_non_adjacent from 7.1 twice.
+    Check: [2, 3, 2] gives 3, and [1, 2, 3, 1] gives 4.
+* Stock trading with a cooldown
+    Buy and sell as often as you like, holding at most one share,
+    but after a sale you must wait one day before buying again. Use
+    the three modes from 8.2.
+    Check: prices [1, 2, 3, 0, 2] give a profit of 3.
+* Space challenge
+    Rewrite lcs3 to use O(q·r) space, then O(r) space. Which values
+    must you save before overwriting them? (See 7.3 and 7.4.)
+* Trace back for three strings
+    Extend lcs3 to return the subsequence itself, the way lcs_string
+    does for two strings.
+
+Teaching notes:
+  Start from the table in section 1 and ask students to justify each
+  index using the "stopped halfway" question in section 2. The LCS of
+  three strings is the gentlest 3-D example because its recurrence is
+  the 2-D one with one more term. The "run LCS twice" counterexample
+  in section 5 is worth working on the board, since it shows why the
+  extra dimension is needed. If short on time, cover sections 1-5 and
+  assign the rest as reading. For section 7, draw a 2-D table and
+  shade the cells that one cell reads; the loop direction rules in
+  7.3 follow from the picture. For section 8, work the checklist in
+  8.14 on a problem students have not seen, and ask which lever
+  (state or transition) each rule needs.
 
 ----------------------------------------------------------------------
 SLIDE 20 OF 23
