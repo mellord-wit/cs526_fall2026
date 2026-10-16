@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic Programming</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400..700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: #0d1424; overflow: hidden; font-family: 'IBM Plex Sans', Arial, sans-serif; }
+  #stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center center; }
+  #stage > section { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; }
+  #stage > section:not(.current) { display: none !important; }
+  section aside { display: none; }
+  h1, h2, h3 { font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 0.35em 0.6em; border-bottom: 1px solid #c9c3b3; }
+  th { border-bottom: 2px solid #15213B; }
+  svg { display: block; }
+  #notes { position: fixed; left: 0; right: 0; bottom: 0; max-height: 35%; overflow: auto; padding: 16px 24px;
+           background: #F7F5EF; color: #15213B; font-size: 18px; line-height: 1.5; border-top: 4px solid #B04A15; display: none; }
+  body.show-notes #notes { display: block; }
+  #hud { position: fixed; right: 16px; bottom: 12px; color: #93A4BF; font: 14px 'IBM Plex Sans', Arial, sans-serif; }
+  body.show-notes #hud { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+<section id="cover" data-transition="fade" style="background:#15213B;color:#F7F5EF;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:40px">
+<p style="font-size:28px;font-weight:600;color:#F0A35E;letter-spacing:3px;text-transform:uppercase">CS 526 · Additional Lecture</p>
+<h1 style="font-family:'Source Serif 4', Georgia, serif;font-size:140px;font-weight:600;line-height:1.05;color:#F7F5EF">Dynamic Programming</h1>
+<p style="font-size:44px;line-height:1.3;color:#C9D2E3;width:1200px">Solving big problems by remembering the answers to small ones</p>
+<div style="display:flex;flex-direction:row;gap:12px">
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">0</p>
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">1</p>
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">1</p>
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">2</p>
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">3</p>
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">5</p>
+<p style="width:96px;height:96px;border:2px solid #3A4A6B;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#C9D2E3">8</p>
+<p style="width:96px;height:96px;border:2px solid #F0A35E;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#F0A35E">13</p>
+<p style="width:96px;height:96px;border:2px dashed #F0A35E;border-radius:12px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:2.85;text-align:center;color:#F0A35E">?</p>
+</div>
+<aside>Welcome. Today is a one-hour lecture on dynamic programming, usually shortened to DP. The row of boxes is the Fibonacci sequence. Each new value is built from two values we have already stored. That idea, computing an answer once and reusing it, is the whole lecture in one picture. Ask the class what goes in the last box (21) and how they knew so fast: they reused 8 and 13 instead of starting over. Plan: about 10 minutes of motivation, about 10 on the two implementation styles, a short recipe, then three worked examples (coin change, knapsack, longest common subsequence), and patterns and practice at the end.</aside>
+</section>
+<section id="agenda" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">The plan</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Today’s hour</h2>
+</div>
+<table style="font-size:32px;color:#15213B">
+<tr><th style="width:18%;text-align:left">Minutes</th><th style="width:82%;text-align:left">Topic</th></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">0–10</td><td>Why DP? Fibonacci and the two key properties</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">10–20</td><td>Memoization (top-down) vs. tabulation (bottom-up)</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">20–23</td><td>A five-step recipe for any DP problem</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">23–32</td><td>Example 1: coin change</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">32–44</td><td>Example 2: 0/1 knapsack</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">44–53</td><td>Example 3: longest common subsequence</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">53–60</td><td>Patterns, pitfalls and practice problems</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 2</p>
+<aside>Walk through the plan quickly. Tell students every example on the slides is in AdditionalLectures/dynamic_programming_examples.py, so they can run it and change the inputs. The three worked examples get harder on purpose: a 1-D table, then a 2-D table over items and capacity, then a 2-D table over two strings.</aside>
+</section>
+<section id="fib-naive" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Motivation</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Fibonacci, the obvious way</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:64px;flex:1;align-items:center">
+<div style="width:900px;background:#15213B;border-radius:16px;padding:56px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:1.6;color:#E9E6DC;white-space:nowrap">def fib(n):<br>&#160;&#160;&#160;&#160;if n &lt;= 1:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;return n<br>&#160;&#160;&#160;&#160;return fib(n - 1) + fib(n - 2)</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:28px;color:#4A5568">To compute fib(40) = 102,334,155 it makes</p>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:120px;font-weight:600;line-height:1;color:#B04A15">331 million</p>
+<p style="font-size:28px;color:#4A5568;line-height:1.4">function calls. Each step up in n multiplies the work by about 1.6: exponential time.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 3</p>
+<aside>Start with code everyone has written. It is correct and it reads exactly like the math definition. Ask: how long does fib(40) take? In CPython it is tens of seconds; fib(50) would take hours. The exact count is 331,160,281 calls for fib(40); the example file prints the call counts so students can see them. The number of calls is 2·F(n+1) − 1, so it grows like the golden ratio, about 1.618 to the n. Ask: where is all that time going? Next slide answers it.</aside>
+</section>
+<section id="fib-tree" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Where the time goes</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">The same calls happen again and again</h2>
+</div>
+<div style="position:relative;width:1664px;height:520px">
+<svg aria-label="Recursion tree of fib(5): fib(3) appears twice and fib(2) three times" width="1664" height="520" viewBox="0 0 1664 520">
+<g stroke="#8A93A3" stroke-width="3">
+<line x1="832" y1="68" x2="440" y2="116"/>
+<line x1="832" y1="68" x2="1240" y2="116"/>
+<line x1="440" y1="180" x2="220" y2="228"/>
+<line x1="440" y1="180" x2="660" y2="228"/>
+<line x1="1240" y1="180" x2="1060" y2="228"/>
+<line x1="1240" y1="180" x2="1420" y2="228"/>
+<line x1="220" y1="292" x2="110" y2="340"/>
+<line x1="220" y1="292" x2="330" y2="340"/>
+<line x1="660" y1="292" x2="560" y2="340"/>
+<line x1="660" y1="292" x2="760" y2="340"/>
+<line x1="1060" y1="292" x2="960" y2="340"/>
+<line x1="1060" y1="292" x2="1160" y2="340"/>
+<line x1="110" y1="404" x2="65" y2="452"/>
+<line x1="110" y1="404" x2="215" y2="452"/>
+</g>
+<g stroke-width="3">
+<rect x="767" y="4" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="375" y="116" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="1175" y="116" width="130" height="64" rx="12" fill="#F6D9C2" stroke="#B04A15"/>
+<rect x="155" y="228" width="130" height="64" rx="12" fill="#F6D9C2" stroke="#B04A15"/>
+<rect x="595" y="228" width="130" height="64" rx="12" fill="#D6E2F2" stroke="#2C5F9E"/>
+<rect x="995" y="228" width="130" height="64" rx="12" fill="#D6E2F2" stroke="#2C5F9E"/>
+<rect x="1355" y="228" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="45" y="340" width="130" height="64" rx="12" fill="#D6E2F2" stroke="#2C5F9E"/>
+<rect x="265" y="340" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="495" y="340" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="695" y="340" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="895" y="340" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="1095" y="340" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="0" y="452" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+<rect x="150" y="452" width="130" height="64" rx="12" fill="#FBFAF6" stroke="#15213B"/>
+</g>
+</svg>
+<p style="position:absolute;left:767px;top:4px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(5)</p>
+<p style="position:absolute;left:375px;top:116px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(4)</p>
+<p style="position:absolute;left:1175px;top:116px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(3)</p>
+<p style="position:absolute;left:155px;top:228px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(3)</p>
+<p style="position:absolute;left:595px;top:228px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(2)</p>
+<p style="position:absolute;left:995px;top:228px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(2)</p>
+<p style="position:absolute;left:1355px;top:228px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(1)</p>
+<p style="position:absolute;left:45px;top:340px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(2)</p>
+<p style="position:absolute;left:265px;top:340px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(1)</p>
+<p style="position:absolute;left:495px;top:340px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(1)</p>
+<p style="position:absolute;left:695px;top:340px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(0)</p>
+<p style="position:absolute;left:895px;top:340px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(1)</p>
+<p style="position:absolute;left:1095px;top:340px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(0)</p>
+<p style="position:absolute;left:0px;top:452px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(1)</p>
+<p style="position:absolute;left:150px;top:452px;width:130px;height:64px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:2.28;text-align:center;color:#15213B">fib(0)</p>
+<p style="position:absolute;left:1000px;top:0px;width:664px;font-size:28px;line-height:1.4;color:#4A5568;text-align:right">15 calls for fib(5): fib(3) runs twice,<br>fib(2) three times, fib(1) five times.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 4</p>
+<aside>This is the recursion tree for fib(5). The orange boxes are fib(3), computed twice. The blue boxes are fib(2), computed three times. Point at the left subtree under fib(4): the whole fib(3) subtree on the right is an exact copy of work we already did on the left. The tree has 15 nodes for n = 5, and every extra level roughly doubles it. The key observation: there are only n + 1 different questions (fib(0) to fib(n)), but we ask them exponentially many times. That gap is what dynamic programming removes.</aside>
+</section>
+<section id="properties" data-transition="fade" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">The key idea</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Two properties make a DP problem</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:48px;border-radius:16px;border-top:8px solid #B04A15">
+<h3 style="font-size:44px;font-weight:600;color:#15213B">Overlapping subproblems</h3>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">The naive recursion solves the same smaller problem many times.</p>
+<p style="font-size:32px;line-height:1.4;color:#15213B"><b>Fix:</b> solve each one once and store the answer.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:48px;border-radius:16px;border-top:8px solid #2C5F9E">
+<h3 style="font-size:44px;font-weight:600;color:#15213B">Optimal substructure</h3>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">The best answer is built from the best answers to smaller problems.</p>
+<p style="font-size:32px;line-height:1.4;color:#15213B"><b>Result:</b> we can write a recurrence.</p>
+</div>
+</div>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:44px;line-height:1.3;color:#15213B">Dynamic programming = recursion + a table of remembered answers.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 5</p>
+<aside>These are the two properties to check for. Overlapping subproblems: without it, caching gains nothing. Merge sort, for example, splits into halves that never repeat, so it is divide and conquer, not DP. Optimal substructure: the best solution contains best solutions to its subproblems. Shortest paths have it: the best route from A to C through B uses the best route from A to B. Longest simple path does not, which is why it has no easy DP. The name “dynamic programming” is historical: Richard Bellman chose it in the 1950s. “Programming” meant planning with a table, not writing code.</aside>
+</section>
+<section id="memo" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Approach 1 · Top-down</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Memoization: recurse, then cache</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1060px;background:#15213B;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:30px;line-height:1.5;color:#E9E6DC;white-space:nowrap">def fib(n, memo=None):<br>&#160;&#160;&#160;&#160;if memo is None:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;memo = {} <span style="color:#93A4BF"># new dict for each top call</span><br>&#160;&#160;&#160;&#160;if n in memo: <span style="color:#93A4BF"># solved already?</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;return memo[n]<br>&#160;&#160;&#160;&#160;if n &lt;= 1: <span style="color:#93A4BF"># base cases</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;return n<br>&#160;&#160;&#160;&#160;memo[n] = fib(n - 1, memo) + fib(n - 2, memo)<br>&#160;&#160;&#160;&#160;return memo[n]</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">O(n) time</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Each fib(k) is computed once. fib(40) now takes 79 calls.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">O(n) space</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">The memo dict plus the call stack.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Python shortcut</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Put @functools.lru_cache on the plain recursive version.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 6</p>
+<aside>Memoization keeps the recursive code and adds a lookup table. Before doing any work we check the table; after doing the work we store the result. The recursion still happens top-down, starting from n, but each subproblem is solved only once. Count: fib(40) makes 79 calls instead of 331 million (each of fib(2)..fib(40) does real work once, plus the cache hits). Point out memo=None: writing memo={} as a default argument is a classic Python trap, because that one dict is shared between all calls of the function. It happens to work here, but it is a bug waiting to happen in other problems. Mention that HW5’s lais1.py already used this pattern: the longest_lengths_of_a and longest_lengths_of_b lists start at −1 and act as memo tables. The functools.lru_cache decorator does the same caching for you on any function whose arguments are hashable.</aside>
+</section>
+<section id="tabulation" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Approach 2 · Bottom-up</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Tabulation: fill a table in order</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1060px;background:#15213B;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:30px;line-height:1.5;color:#E9E6DC;white-space:nowrap">def fib(n):<br>&#160;&#160;&#160;&#160;if n &lt;= 1:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;return n<br>&#160;&#160;&#160;&#160;table = [0] * (n + 1) <span style="color:#93A4BF"># table[i] = fib(i)</span><br>&#160;&#160;&#160;&#160;table[1] = 1<br>&#160;&#160;&#160;&#160;for i in range(2, n + 1): <span style="color:#93A4BF"># small to large</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;table[i] = table[i - 1] + table[i - 2]<br>&#160;&#160;&#160;&#160;return table[n]</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">No recursion</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">A loop fills the table from the base cases up.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Same O(n) time</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">No call overhead, no recursion limit.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">O(1) space is possible</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Each cell needs only the last two, so keep two variables.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 7</p>
+<aside>Tabulation turns the recursion inside out. We decide in advance which order to solve subproblems in, smallest first, so that whenever we need table[i − 1] and table[i − 2] they are already filled. Draw the table on the board: 0, 1, 1, 2, 3, 5, 8, 13 filling left to right. Because each cell only looks back two places, we can throw the rest of the table away. The example file has fib_two_vars: prev, curr = 0, 1; then loop n times doing prev, curr = curr, prev + curr; return prev. That is O(n) time and O(1) space. Saving space this way is common in bottom-up DP: if row i only needs row i − 1, keep two rows.</aside>
+</section>
+<section id="compare" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Choosing a style</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Top-down vs. bottom-up</h2>
+</div>
+<table style="font-size:28px;color:#15213B">
+<tr><th style="width:24%;text-align:left"></th><th style="width:38%;text-align:left">Top-down (memoization)</th><th style="width:38%;text-align:left">Bottom-up (tabulation)</th></tr>
+<tr><td><b>How you write it</b></td><td>Recursion plus a cache</td><td>Loops that fill a table</td></tr>
+<tr><td><b>Order of work</b></td><td>Set by the recursion</td><td>You choose it explicitly</td></tr>
+<tr><td><b>Solves</b></td><td>Only subproblems it needs</td><td>Every cell in the table</td></tr>
+<tr><td><b>Overhead</b></td><td>Calls; depth limit near 1000</td><td>None; easy to cut space</td></tr>
+<tr><td><b>Use it when</b></td><td>The recurrence is natural</td><td>All states are needed</td></tr>
+</table>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">Both give the same answers and the same big-O time. A good habit: write top-down first to get it right, then convert to bottom-up.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 8</p>
+<aside>Neither style is “the real DP”; both are. Top-down is often easier to get right because it mirrors the recurrence, and it skips states that are never reached. Bottom-up avoids Python’s default recursion limit of 1000 frames (sys.getrecursionlimit()), so memoized fib(5000) raises RecursionError while the loop version is fine. Bottom-up also makes space savings visible. Suggest the workflow: recurrence first, memoize to test it, then convert to a table if speed or depth matters. That is about 20 minutes in; next is the recipe.</aside>
+</section>
+<section id="recipe" data-transition="fade" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">The recipe</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Five steps for any DP problem</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F7F5EF;padding:32px;border-radius:16px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1;color:#B04A15">1</p>
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#15213B">Define the subproblem</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5568">Say in words what dp[i] or dp[i][j] means.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F7F5EF;padding:32px;border-radius:16px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1;color:#B04A15">2</p>
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#15213B">Write the recurrence</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5568">Express one subproblem using smaller ones.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F7F5EF;padding:32px;border-radius:16px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1;color:#B04A15">3</p>
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#15213B">Set the base cases</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5568">Answer the smallest inputs directly.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F7F5EF;padding:32px;border-radius:16px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1;color:#B04A15">4</p>
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#15213B">Pick an order</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5568">Fill cells so every dependency is ready first.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F7F5EF;padding:32px;border-radius:16px">
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1;color:#B04A15">5</p>
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#15213B">Read the answer</h3>
+<p style="font-size:26px;line-height:1.4;color:#4A5568">Find it in the table, then trace back the choices.</p>
+</div>
+</div>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:40px;line-height:1.3;color:#15213B">Step 1 is the hard part. If you can say what dp[i] means in one sentence, the rest usually follows.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 9</p>
+<aside>Apply the recipe to Fibonacci out loud so students see it once on an easy problem. 1: table[i] is the i-th Fibonacci number. 2: table[i] = table[i − 1] + table[i − 2]. 3: table[0] = 0, table[1] = 1. 4: increasing i. 5: the answer is table[n]. Stress step 1. Most wrong DP solutions come from a vague subproblem. Students should write the meaning of the table as a comment in their code, the way the tabulation slide did. We will use these five steps, labelled, on each of the next three examples.</aside>
+</section>
+<section id="coin-problem" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 1 · Coin change</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Make change with the fewest coins</h2>
+</div>
+<p style="font-size:36px;line-height:1.4;color:#15213B">Coins <span style="color:#B04A15">[1, 3, 4]</span>, as many of each as you like. Make <span style="color:#B04A15">6</span>.</p>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#ECE8DD;padding:48px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;color:#15213B">Greedy: take the biggest coin that fits</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;color:#15213B">4 + 1 + 1</p>
+<p style="font-size:32px;color:#4A5568"><b>3 coins.</b> Not optimal.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#15213B;padding:48px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">DP: try every last coin</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;color:#F0A35E">3 + 3</p>
+<p style="font-size:32px;color:#C9D2E3"><b>2 coins.</b> Optimal.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 10</p>
+<aside>About 23 minutes in. Pose the problem before showing the answers and ask the class for the fewest coins. Many will say 3 (4 + 1 + 1) because that is what greedy does, and greedy works for US coins (1, 5, 10, 25). With 1, 3, 4 it fails: 3 + 3 uses only 2 coins. This is the point of the example: when a greedy choice can be wrong, we need to consider every choice, and DP makes that affordable. The DP idea: whatever the best solution is, it has some last coin c. Remove it, and what remains must be a best solution for amount − c. That is optimal substructure.</aside>
+</section>
+<section id="coin-recurrence" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 1 · Coin change</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Subproblem, recurrence, table</h2>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#15213B"><b>Subproblem:</b> dp[a] = the fewest coins that add up to exactly a.</p>
+<div style="background:#15213B;border-radius:16px;padding:32px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;line-height:1.5;color:#E9E6DC;white-space:nowrap">dp[0] = 0<br>dp[a] = min( dp[a - c] + 1 ) over each coin c &lt;= a<br><span style="color:#F0A35E">dp[6] = min(dp[5]+1, dp[3]+1, dp[2]+1) = min(3, 2, 3) = 2</span></p>
+</div>
+<table style="font-size:32px;color:#15213B;font-family:'JetBrains Mono', 'Courier New', monospace">
+<tr><th style="width:23%;text-align:left">a</th><th style="width:11%;text-align:center">0</th><th style="width:11%;text-align:center">1</th><th style="width:11%;text-align:center">2</th><th style="width:11%;text-align:center">3</th><th style="width:11%;text-align:center">4</th><th style="width:11%;text-align:center">5</th><th style="width:11%;text-align:center">6</th></tr>
+<tr><td>dp[a]</td><td style="text-align:center">0</td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center;color:#B04A15"><b>2</b></td></tr>
+<tr><td>last coin</td><td style="text-align:center">–</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">3</td><td style="text-align:center">4</td><td style="text-align:center">1</td><td style="text-align:center;color:#B04A15"><b>3</b></td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 11</p>
+<aside>Walk the recipe. 1, subproblem: dp[a] is the fewest coins making exactly a. 2, recurrence: try each coin c as the last coin; the rest costs dp[a − c]; take the minimum and add 1. 3, base case: dp[0] = 0, and any amount we cannot make stays at infinity. 4, order: a from 1 up to the target, because dp[a] only looks at smaller amounts. 5, answer: dp[6] = 2. Fill the table live on the board, one column at a time, asking students for each value. The “last coin” row records which coin won, and it lets us rebuild the solution: from 6 take a 3, go to dp[3], take a 3, reach 0. So the coins are 3 + 3.</aside>
+</section>
+<section id="coin-code" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 1 · Coin change</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Coin change in Python</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1060px;background:#15213B;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:30px;line-height:1.5;color:#E9E6DC;white-space:nowrap">def min_coins(coins, amount):<br>&#160;&#160;&#160;&#160;INF = float("inf")<br>&#160;&#160;&#160;&#160;dp = [0] + [INF] * amount <span style="color:#93A4BF"># dp[0] = 0</span><br>&#160;&#160;&#160;&#160;for a in range(1, amount + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for c in coins:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if c &lt;= a and dp[a - c] + 1 &lt; dp[a]:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;dp[a] = dp[a - c] + 1<br>&#160;&#160;&#160;&#160;return dp[amount] if dp[amount] != INF else -1<br><br><span style="color:#93A4BF">min_coins([1, 3, 4], 6)  # 2</span></p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Time O(A · k)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">A amounts, each tries k coins.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Space O(A)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">One list of length A + 1.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Impossible amounts</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Stay at infinity, so we return −1.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 12</p>
+<aside>The code is the recurrence almost word for word. The outer loop is the evaluation order; the inner loop tries every last coin. Using infinity for “not reachable yet” means we never need a special case: infinity + 1 is still infinity in Python floats. Example: coins [5, 10] and amount 3 returns −1. Quick variation to ask: how would you count the number of ways to make the amount instead of the fewest coins? Answer: replace min with a sum, set ways[0] = 1, and loop over coins in the outer loop so that each combination is counted once and not once per ordering. That is about 32 minutes in.</aside>
+</section>
+<section id="knap-problem" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 2 · 0/1 knapsack</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Pack the most value into capacity 7</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:64px;flex:1">
+<div style="width:560px;display:flex;flex-direction:column;gap:24px">
+<table style="font-size:32px;color:#15213B">
+<tr><th style="width:34%;text-align:left">Item</th><th style="width:33%;text-align:center">Weight</th><th style="width:33%;text-align:center">Value</th></tr>
+<tr><td>A</td><td style="text-align:center">1</td><td style="text-align:center">1</td></tr>
+<tr><td>B</td><td style="text-align:center">3</td><td style="text-align:center">4</td></tr>
+<tr><td>C</td><td style="text-align:center">4</td><td style="text-align:center">5</td></tr>
+<tr><td>D</td><td style="text-align:center">5</td><td style="text-align:center">7</td></tr>
+</table>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Each item is taken whole or left behind (0 or 1 of it).</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:32px;line-height:1.4;color:#15213B"><b>Subproblem:</b> K[i][c] = the best value using only the first i items with capacity c.</p>
+<div style="background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:30px;line-height:1.6;color:#E9E6DC;white-space:nowrap">skip = K[i-1][c]<br>take = K[i-1][c - w[i]] + v[i] <span style="color:#93A4BF"># if w[i] &lt;= c</span><br><span style="color:#F0A35E">K[i][c] = max(skip, take)</span><br>K[0][c] = 0 <span style="color:#93A4BF"># no items, no value</span></p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 13</p>
+<aside>About 32 minutes in. Ask first: which items would you pack? Students often grab D, the most valuable item (7), then can only add A for a total of 8. The best is B + C: weight exactly 7, value 9. Greedy by value per weight also fails here: A is 1.0, B 1.33, C 1.25, D 1.4, so greedy takes D and then A, for 8. Now the recurrence. Consider item i last. Either we skip it, and the answer is the best with the first i − 1 items and the same capacity, or we take it, gaining v[i] and losing w[i] of capacity. Two choices, take the better one. The table now has two dimensions because the subproblem needs two numbers to describe it: how many items we may use, and how much room is left.</aside>
+</section>
+<section id="knap-table" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 2 · 0/1 knapsack</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Filling the table row by row</h2>
+</div>
+<table style="font-size:30px;color:#15213B;font-family:'JetBrains Mono', 'Courier New', monospace">
+<tr><th style="width:24%;text-align:left">items \ c</th><th style="width:9.5%;text-align:center">0</th><th style="width:9.5%;text-align:center">1</th><th style="width:9.5%;text-align:center">2</th><th style="width:9.5%;text-align:center">3</th><th style="width:9.5%;text-align:center">4</th><th style="width:9.5%;text-align:center">5</th><th style="width:9.5%;text-align:center">6</th><th style="width:9.5%;text-align:center">7</th></tr>
+<tr><td>none</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td><td style="text-align:center">0</td></tr>
+<tr><td>+A (1, 1)</td><td style="text-align:center">0</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td></tr>
+<tr><td>+B (3, 4)</td><td style="text-align:center">0</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center;color:#2C5F9E"><b>4</b></td><td style="text-align:center">5</td><td style="text-align:center">5</td><td style="text-align:center">5</td><td style="text-align:center;color:#2C5F9E"><b>5</b></td></tr>
+<tr><td>+C (4, 5)</td><td style="text-align:center">0</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">4</td><td style="text-align:center">5</td><td style="text-align:center">6</td><td style="text-align:center">6</td><td style="text-align:center;color:#B04A15"><b>9</b></td></tr>
+<tr><td>+D (5, 7)</td><td style="text-align:center">0</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">4</td><td style="text-align:center">5</td><td style="text-align:center">7</td><td style="text-align:center">8</td><td style="text-align:center;color:#B04A15"><b>9</b></td></tr>
+</table>
+<div style="background:#ECE8DD;border-radius:16px;padding:32px 40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#15213B;white-space:nowrap">K[C][7] = max( skip K[B][7] = 5,  take K[B][3] + 5 = 9 ) = <b>9</b></p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 14</p>
+<aside>Fill this on the board one row at a time. Row “none” is all zeros: the base case. Row +A: once capacity is at least 1, we can take A for value 1. Row +B: at capacity 3 we take B for 4; at 4 we take B and A for 5. The interesting cell is row +C, capacity 7, in orange. Skipping C leaves the row-B value at capacity 7, which is 5. Taking C uses 4 of the 7 units, leaving capacity 3, where row B says 4; plus C’s value 5 gives 9. The blue cells are the two values that cell compares. The last row adds D, but at capacity 7 taking D gives K[C][2] + 7 = 8, which is worse than 9, so the answer stays 9. Each cell looks only at the row above, so row order is a valid evaluation order. Size: (n + 1) × (C + 1) cells, each O(1), so O(n·C) time. Note that this is pseudo-polynomial: it depends on the numeric capacity, not just the number of items.</aside>
+</section>
+<section id="knap-code" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 2 · 0/1 knapsack</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Knapsack in Python</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1060px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def knapsack(weights, values, cap):<br>&#160;&#160;&#160;&#160;n = len(weights)<br>&#160;&#160;&#160;&#160;K = [[0] * (cap + 1) for _ in range(n + 1)]<br>&#160;&#160;&#160;&#160;for i in range(1, n + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;w, v = weights[i - 1], values[i - 1]<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for c in range(cap + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;K[i][c] = K[i - 1][c] <span style="color:#93A4BF"># skip item i</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if w &lt;= c: <span style="color:#93A4BF"># or take it</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;take = K[i - 1][c - w] + v<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;K[i][c] = max(K[i][c], take)<br>&#160;&#160;&#160;&#160;return K[n][cap]<br><br><span style="color:#93A4BF">knapsack([1, 3, 4, 5], [1, 4, 5, 7], 7)  # 9</span></p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Time O(n · C)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">One O(1) step per cell.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Space O(n · C)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Keep the whole table to recover the items.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Watch the index</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Row i uses weights[i − 1].</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 15</p>
+<aside>Point out the off-by-one: the table has n + 1 rows so that row 0 can be the “no items” base case, which means row i describes item i − 1 in the Python lists. Ask: why must the inner loop read from row i − 1 and not row i? Because reading row i would let us take the same item twice. That other version is the unbounded knapsack, where every item can be reused, and it is the same code with K[i][c − w] instead of K[i − 1][c − w]. If you only need the value, you can keep a single 1-D list and loop c downward from cap to w; looping downward is what keeps each item to one use. To list the chosen items, keep the full table: next slide.</aside>
+</section>
+<section id="knap-recover" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 2 · Step 5</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Tracing back which items we took</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:900px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#E9E6DC;white-space:nowrap">def chosen_items(K, weights, cap):<br>&#160;&#160;&#160;&#160;items, c = [], cap<br>&#160;&#160;&#160;&#160;for i in range(len(weights), 0, -1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if K[i][c] != K[i - 1][c]: <span style="color:#93A4BF"># changed</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;items.append(i - 1) <span style="color:#93A4BF"># so taken</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;c -= weights[i - 1]<br>&#160;&#160;&#160;&#160;return items[::-1]</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<p style="font-size:28px;line-height:1.4;color:#15213B"><b>D:</b> 9 = 9 above, so skip</p>
+<p style="font-size:28px;line-height:1.4;color:#15213B"><b>C:</b> 9 ≠ 5, take; c = 7 − 4 = 3</p>
+<p style="font-size:28px;line-height:1.4;color:#15213B"><b>B:</b> 4 ≠ 1, take; c = 3 − 3 = 0</p>
+<p style="font-size:28px;line-height:1.4;color:#15213B"><b>A:</b> 0 = 0, skip</p>
+<p style="font-size:32px;line-height:1.4;color:#B04A15;font-weight:600">Result: B + C, weight 7, value 9</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 16</p>
+<aside>The table stores values, not decisions, but the decisions can be recovered. Start at the bottom-right cell. If K[i][c] is the same as the cell straight above it, item i was not needed, so move up. If it is different, item i must have been taken, so record it, subtract its weight from c, and move up. Walk it on the table from the previous slide: D is skipped, C is taken, capacity drops to 3, B is taken, capacity drops to 0, A is skipped. This is step 5 of the recipe, and the same trick works for coin change (the last-coin row) and for LCS next. About 44 minutes in.</aside>
+</section>
+<section id="lcs-problem" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 3 · Longest common subsequence</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Longest subsequence two strings share</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:64px;flex:1;align-items:center">
+<div style="width:620px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:row;gap:12px;align-items:center">
+<p style="width:72px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;color:#5F6673">X</p>
+<p style="width:80px;height:80px;border-radius:12px;background:#B04A15;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.22;text-align:center;color:#F7F5EF">B</p>
+<p style="width:80px;height:80px;border-radius:12px;border:2px solid #C9C3B3;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.1;text-align:center;color:#15213B">A</p>
+<p style="width:80px;height:80px;border-radius:12px;background:#B04A15;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.22;text-align:center;color:#F7F5EF">C</p>
+<p style="width:80px;height:80px;border-radius:12px;border:2px solid #C9C3B3;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.1;text-align:center;color:#15213B">D</p>
+<p style="width:80px;height:80px;border-radius:12px;background:#B04A15;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.22;text-align:center;color:#F7F5EF">B</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:12px;align-items:center">
+<p style="width:72px;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;color:#5F6673">Y</p>
+<p style="width:80px;height:80px;border-radius:12px;background:#B04A15;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.22;text-align:center;color:#F7F5EF">B</p>
+<p style="width:80px;height:80px;border-radius:12px;border:2px solid #C9C3B3;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.1;text-align:center;color:#15213B">D</p>
+<p style="width:80px;height:80px;border-radius:12px;background:#B04A15;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.22;text-align:center;color:#F7F5EF">C</p>
+<p style="width:80px;height:80px;border-radius:12px;background:#B04A15;font-family:'JetBrains Mono', 'Courier New', monospace;font-size:36px;line-height:2.22;text-align:center;color:#F7F5EF">B</p>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#15213B">LCS = <b>B C B</b>, length 3. A subsequence keeps the order but may skip letters.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:32px;line-height:1.4;color:#15213B"><b>Subproblem:</b> L[i][j] = LCS length of the first i letters of X and the first j letters of Y.</p>
+<div style="background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.6;color:#E9E6DC;white-space:nowrap"><span style="color:#93A4BF"># i = 0 or j = 0:</span><br>L[i][j] = 0<br><span style="color:#93A4BF"># last letters match:</span><br>L[i][j] = L[i-1][j-1] + 1<br><span style="color:#93A4BF"># otherwise drop one:</span><br>L[i][j] = max(L[i-1][j], L[i][j-1])</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 17</p>
+<aside>About 44 minutes in. Define subsequence versus substring: a substring must be contiguous, a subsequence only needs to keep the order. B C B is a subsequence of BACDB (skip A and D) and of BDCB (skip D). B D B also works, which shows the LCS is not always unique, though its length is. Applications: diff and git compare files line by line with LCS, and DNA sequence alignment uses close relatives of it. The recurrence comes from looking at the last letters. If they match, that letter can end the LCS, so we take 1 plus the LCS of both prefixes without it. If they do not match, at least one of the two last letters is not in the LCS, so we drop one or the other and keep the better answer.</aside>
+</section>
+<section id="lcs-table" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 3 · Longest common subsequence</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">The LCS table for BACDB and BDCB</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:64px;flex:1;align-items:center">
+<table style="width:880px;font-size:30px;color:#15213B;font-family:'JetBrains Mono', 'Courier New', monospace">
+<tr><th style="width:20%;text-align:center"></th><th style="width:16%;text-align:center">–</th><th style="width:16%;text-align:center">B</th><th style="width:16%;text-align:center">D</th><th style="width:16%;text-align:center">C</th><th style="width:16%;text-align:center">B</th></tr>
+<tr><td style="text-align:center"><b>–</b></td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center;color:#5F6673">0</td></tr>
+<tr><td style="text-align:center"><b>B</b></td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center;color:#B04A15"><b>1</b></td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td></tr>
+<tr><td style="text-align:center"><b>A</b></td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center">1</td></tr>
+<tr><td style="text-align:center"><b>C</b></td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center">1</td><td style="text-align:center">1</td><td style="text-align:center;color:#B04A15"><b>2</b></td><td style="text-align:center">2</td></tr>
+<tr><td style="text-align:center"><b>D</b></td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center">2</td><td style="text-align:center">2</td></tr>
+<tr><td style="text-align:center"><b>B</b></td><td style="text-align:center;color:#5F6673">0</td><td style="text-align:center">1</td><td style="text-align:center">2</td><td style="text-align:center">2</td><td style="text-align:center;color:#B04A15"><b>3</b></td></tr>
+</table>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Letters match</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Diagonal up-left, plus 1.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">No match</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">The larger of the cell above and the cell to the left.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Trace back</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">From the corner, follow the bold matches: B, C, B.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 18</p>
+<aside>Rows are letters of X = BACDB, columns are letters of Y = BDCB, with an empty-prefix row and column of zeros as the base case. Fill row by row, left to right: each cell needs the cell above, the cell to the left and the diagonal, all already filled. Do two cells together with the class. Row C, column C: the letters match, so take the diagonal (row A, column D = 1) plus 1 = 2. Row D, column C: no match, so take the larger of above (2) and left (2) = 2. The answer is the bottom-right cell, 3. Trace back: at a match, record the letter and move diagonally; otherwise move toward the larger neighbour (on a tie, pick one consistently). The bold cells are the matches on the path, which spell B, C, B.</aside>
+</section>
+<section id="lcs-code" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Example 3 · Longest common subsequence</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">LCS in Python</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1120px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#E9E6DC;white-space:nowrap">def lcs_length(x, y):<br>&#160;&#160;&#160;&#160;m, n = len(x), len(y)<br>&#160;&#160;&#160;&#160;L = [[0] * (n + 1) for _ in range(m + 1)]<br>&#160;&#160;&#160;&#160;for i in range(1, m + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for j in range(1, n + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if x[i - 1] == y[j - 1]:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j] = L[i - 1][j - 1] + 1<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;else:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j] = max(L[i - 1][j], L[i][j - 1])<br>&#160;&#160;&#160;&#160;return L[m][n]<br><br><span style="color:#93A4BF">lcs_length("BACDB", "BDCB")  # 3</span></p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Time O(m · n)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">One O(1) step per cell.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Space O(m · n)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Two rows suffice for the length alone.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Brute force</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">x has 2^m subsequences: exponential.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 19</p>
+<aside>Same shape as knapsack: a table one bigger than the inputs in each dimension, a double loop, and an off-by-one where row i means the letter x[i − 1]. Contrast with brute force: a string of length m has 2^m subsequences, so checking each one against y is exponential, while the table is m·n. For two 1,000-character strings that is one million cells, instant. The example file has lcs_string, which does the trace back and returns the actual subsequence. About 53 minutes in.</aside>
+</section>
+<section id="patterns" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Spotting DP</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Common shapes of DP problems</h2>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">Clues: the question asks for a <b>minimum</b>, <b>maximum</b>, <b>number of ways</b> or <b>is it possible</b>, and every step involves a choice.</p>
+<table style="font-size:28px;color:#15213B">
+<tr><th style="width:34%;text-align:left">State</th><th style="width:66%;text-align:left">Examples</th></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[i] over one sequence</td><td>Fibonacci, coin change, climbing stairs, longest increasing subsequence</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[i][j] over two strings</td><td>LCS, edit distance, sequence alignment</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[i][c] items × budget</td><td>0/1 knapsack, subset sum, partition</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[r][c] over a grid</td><td>Unique paths, minimum path sum</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[i][j] over an interval</td><td>Matrix-chain order, longest palindromic subsequence</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 20</p>
+<aside>About 53 minutes in, so move quickly through the last four slides. The fastest way to find a recurrence is to recognize a shape you have seen before. The table lists the common shapes and what the indices mean. Interval DP, the last row, is the one we did not cover: dp[i][j] describes the substring or subarray from i to j, and you fill it by increasing interval length. Also mention that shortest-path algorithms like Bellman-Ford and Floyd-Warshall are also DP, applied to graphs.</aside>
+</section>
+<section id="pitfalls" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Debugging DP</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Five common bugs and their fixes</h2>
+</div>
+<table style="font-size:28px;color:#15213B">
+<tr><th style="width:46%;text-align:left">Bug</th><th style="width:54%;text-align:left">Fix</th></tr>
+<tr><td>Default memo={} shared by every call</td><td>Use memo=None, or @lru_cache</td></tr>
+<tr><td>Off-by-one: table is size n, not n + 1</td><td>Leave row 0 for the base case</td></tr>
+<tr><td>Cell read before it is filled</td><td>Check each cell’s dependencies come first</td></tr>
+<tr><td>RecursionError on large inputs</td><td>Switch to bottom-up loops</td></tr>
+<tr><td>Assuming greedy is optimal</td><td>Look for a counterexample, like coins [1, 3, 4]</td></tr>
+</table>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">Test on tiny inputs and compare with the brute-force recursion before trusting the table.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 21</p>
+<aside>These five come up in almost every DP assignment. The mutable default argument is Python-specific: def f(n, memo={}) creates one dict when the function is defined, and every later call shares it. Off-by-one errors come from mixing up “first i items” (table index) with “item i” (list index). The dependency bug shows up as answers that are too small, because the code reads zeros that have not been computed yet. The best debugging habit is the last line: keep the slow recursive version and compare outputs for every small input. The example file does exactly this in its self-test.</aside>
+</section>
+<section id="practice" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Your turn</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Practice problems</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Unique grid paths</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Count paths from the top-left to the bottom-right of a 3 × 7 grid, moving only right or down.</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.5;color:#B04A15">p[r][c] = p[r-1][c] + p[r][c-1]</p>
+<p style="font-size:24px;color:#5F6673">Answer: 28</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Edit distance</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Fewest inserts, deletes or substitutions to turn “kitten” into “sitting”.</p>
+<p style="font-size:24px;line-height:1.5;color:#B04A15">Hint: a 2-D table like LCS</p>
+<p style="font-size:24px;color:#5F6673">Answer: 3</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Longest increasing subsequence</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Find its length in [10, 9, 2, 5, 3, 7, 101, 18].</p>
+<p style="font-size:24px;line-height:1.5;color:#B04A15">Hint: dp[i] = longest one ending at index i</p>
+<p style="font-size:24px;color:#5F6673">Answer: 4</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 22</p>
+<aside>Give students two or three minutes to set up just steps 1 and 2 of the recipe for one problem, then reveal. Grid paths: p[r][c] is the number of ways to reach cell (r, c); the first row and first column are all 1; for a 3 × 7 grid the answer is 28. Edit distance: d[i][j] is the cost of turning the first i letters of one word into the first j letters of the other; if the letters match it is d[i−1][j−1], otherwise 1 + the minimum of the delete, insert and substitute options; kitten to sitting is 3 (substitute k→s, substitute e→i, insert g). LIS: dp[i] = 1 + the maximum dp[j] over earlier j with a smaller value; one answer is 2, 3, 7, 18, length 4. Solutions for all three are in dynamic_programming_examples.py. These work well as an in-class lab or optional homework.</aside>
+</section>
+<section id="summary" data-transition="fade" style="background:#15213B;color:#F7F5EF;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:48px">
+<p style="font-size:28px;font-weight:600;color:#F0A35E;letter-spacing:3px;text-transform:uppercase">Takeaways</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:96px;font-weight:600;line-height:1.1;color:#F7F5EF">Recursion + memory</h2>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:4px solid #F0A35E;padding:24px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">Check two properties</h3>
+<p style="font-size:28px;line-height:1.4;color:#C9D2E3">Overlapping subproblems and optimal substructure.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:4px solid #F0A35E;padding:24px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">Follow the recipe</h3>
+<p style="font-size:28px;line-height:1.4;color:#C9D2E3">Subproblem, recurrence, base cases, order, answer.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:4px solid #F0A35E;padding:24px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">Exponential to polynomial</h3>
+<p style="font-size:28px;line-height:1.4;color:#C9D2E3">Time ≈ number of states × work per state.</p>
+</div>
+</div>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#93A4BF">AdditionalLectures/dynamic_programming_examples.py</p>
+<aside>Close with the three ideas. First, DP applies when subproblems repeat and the best answer is built from best sub-answers. Second, the five-step recipe; step 1, defining the subproblem in words, is where to spend your time. Third, to estimate the running time, count the states (cells in the table) and multiply by the work per state: n for Fibonacci, A·k for coins, n·C for knapsack, m·n for LCS. Point students to the example file: python3 dynamic_programming_examples.py runs every example, prints the call counts and the tables, and checks the DP answers against brute force. Take questions.</aside>
+</section>
+</div>
+<div id="notes"></div>
+<div id="hud">← → or click to move · N notes · F full screen</div>
+<script>
+  const slides = [...document.querySelectorAll('#stage > section')];
+  const stage = document.getElementById('stage');
+  const notes = document.getElementById('notes');
+  let i = Math.max(0, Math.min(slides.length - 1, (parseInt(location.hash.slice(1)) || 1) - 1));
+  function fit() {
+    const reserve = document.body.classList.contains('show-notes') ? notes.offsetHeight : 0;
+    const s = Math.min(innerWidth / 1920, (innerHeight - reserve) / 1080);
+    stage.style.transform = `translate(-50%, calc(-50% - ${reserve / 2}px)) scale(${s})`;
+  }
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((el, k) => el.classList.toggle('current', k === i));
+    const aside = slides[i].querySelector('aside');
+    notes.textContent = `Slide ${i + 1} of ${slides.length} — ` + (aside ? aside.textContent : '(no notes)');
+    history.replaceState(null, '', '#' + (i + 1));
+    fit();
+  }
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) show(i + 1);
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) show(i - 1);
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'n' || e.key === 'N') { document.body.classList.toggle('show-notes'); fit(); }
+    else if (e.key === 'f' || e.key === 'F') {
+      document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    }
+  });
+  addEventListener('click', e => show(e.clientX < innerWidth / 3 ? i - 1 : i + 1));
+  addEventListener('resize', fit);
+  show(i);
+</script>
+</body>
+</html>
