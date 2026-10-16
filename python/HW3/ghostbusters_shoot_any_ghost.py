@@ -24,6 +24,58 @@ Algorithm:
    label for the line a point is on: points on the same parallel line get the same key,
    and points on different parallel lines get different keys.
 
+   Parallel lines and slope:
+      Two lines are parallel when they have the same slope. The direction (dx, dy) has
+      slope m = dy / dx (rise over run), so every shot that moves along (dx, dy) has
+      that same slope. The cross product test above is the slope test with the
+      division removed: the step from p to q has slope (qy - py) / (qx - px), and
+      setting it equal to dy / dx and cross-multiplying gives
+          dy * (qx - px) == dx * (qy - py),
+      which is the cross product being 0.
+
+      Slope alone does not say which line a point is on, because a whole family of
+      parallel lines shares it. Each line in the family is y = m * x + b, and what
+      tells them apart is the intercept b, where the line crosses the y-axis. For a
+      point (x, y), the line with slope m through it has
+          b = y - m * x = y - (dy / dx) * x.
+
+   How the slope relates to line_key:
+      Multiply that intercept by -dx:
+          -dx * b = -dx * y + dy * x = dy * x - dx * y = line_key.
+      So line_key is the intercept b scaled by -dx. The direction is fixed while its
+      keys are being compared, so -dx is the same number for every point, and
+          same line_key  <=>  same intercept b  <=>  same parallel line.
+      The slope sets the line_key equation (it is chosen by the direction), and
+      line_key then picks out the intercept, which says which of the parallel lines
+      a point is on.
+
+      For example, direction (1, 2) has slope 2 and line_key = 2 * x - y. In the
+      3-pair example below:
+          (0, 0): y = 2x + 0,  b = 0,  line_key = -1 * 0    = 0
+          (1, 0): y = 2x - 2,  b = -2, line_key = -1 * (-2) = 2
+          (3, 0): y = 2x - 6,  b = -6, line_key = -1 * (-6) = 6
+      which are exactly the keys 0, 2 and 6 computed there.
+
+   Why the code uses line_key instead of slope and intercept:
+      - No division. m = dy / dx and b are usually fractions, and comparing
+        floating-point numbers for equality can fail from rounding. For direction
+        (4, 2), slope 1/2, the point (1, 0) has b = -1/2, but its line_key is
+        2 * 1 - 4 * 0 = 2, a whole number. Every line_key is a whole number because
+        it only multiplies and subtracts integers.
+      - Vertical directions work. When dx = 0 the slope dy / 0 is undefined and
+        there is no y-intercept, but line_key = dy * x still works: it labels each
+        vertical line by its x value (scaled by dy). For direction (0, 3), the
+        points (2, 5) and (2, -1) both get key 6, and they are on the same vertical
+        line x = 2. Likewise, a horizontal direction (dy = 0) gives
+        line_key = -dx * y, which labels each horizontal line by its y value.
+
+   Different (dx, dy) with the same slope:
+      Directions such as (1, 2), (2, 4) and (-1, -2) all have slope 2. Their
+      line_keys differ by a constant factor (2 * x - y, 4 * x - 2 * y and
+      -2 * x + y), so the key values change, but points that share a key under one
+      still share it under the others. The grouping into parallel lines, which is
+      all the check uses, depends only on the slope.
+
 3. Check that every line can be paired up.
    A ghostbuster's line to its ghost is parallel to (dx, dy) only if the ghost is on the
    ghostbuster's own parallel line, so pairs can never cross from one line to another.
