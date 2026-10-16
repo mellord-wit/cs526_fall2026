@@ -57,6 +57,7 @@
 <tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">32–44</td><td>Example 2: 0/1 knapsack</td></tr>
 <tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">44–53</td><td>Example 3: longest common subsequence</td></tr>
 <tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#B04A15">53–60</td><td>Patterns, pitfalls and practice problems</td></tr>
+<tr><td style="font-family:'JetBrains Mono', 'Courier New', monospace;color:#2C5F9E">Extra</td><td>Extension: multidimensional DP (slides 24–43)</td></tr>
 </table>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 2</p>
 <aside>Walk through the plan quickly. Tell students every example on the slides is in AdditionalLectures/dynamic_programming_examples.py, so they can run it and change the inputs. The three worked examples get harder on purpose: a 1-D table, then a 2-D table over items and capacity, then a 2-D table over two strings.</aside>
@@ -600,6 +601,490 @@
 </div>
 <p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#93A4BF">AdditionalLectures/dynamic_programming_examples.py</p>
 <aside>Close with the three ideas. First, DP applies when subproblems repeat and the best answer is built from best sub-answers. Second, the five-step recipe; step 1, defining the subproblem in words, is where to spend your time. Third, to estimate the running time, count the states (cells in the table) and multiply by the work per state: n for Fibonacci, A·k for coins, n·C for knapsack, m·n for LCS. Point students to the example file: python3 dynamic_programming_examples.py runs every example, prints the call counts and the tables, and checks the DP answers against brute force. Take questions.</aside>
+</section>
+<section id="md-divider" data-transition="fade" style="background:#15213B;color:#F7F5EF;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:48px">
+<p style="font-size:28px;font-weight:600;color:#F0A35E;letter-spacing:3px;text-transform:uppercase">Extension · after slide 19 or a follow-up class</p>
+<h1 style="font-family:'Source Serif 4', Georgia, serif;font-size:104px;font-weight:600;line-height:1.05;color:#F7F5EF">Multidimensional dynamic programming</h1>
+<div style="display:flex;flex-direction:row;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:4px solid #F0A35E;padding:24px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">Several indices</h3>
+<p style="font-size:28px;line-height:1.4;color:#C9D2E3">Choosing the state, cost, fill order, 3-D examples.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:4px solid #F0A35E;padding:24px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">Saving space</h3>
+<p style="font-size:28px;line-height:1.4;color:#C9D2E3">Rolling rows, loop direction, recovering choices.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;border-top:4px solid #F0A35E;padding:24px 0px 0px 0px">
+<h3 style="font-size:36px;font-weight:600;color:#F7F5EF">Complex constraints</h3>
+<p style="font-size:28px;line-height:1.4;color:#C9D2E3">Tweak the state, speed up the transitions.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#93A4BF">CS 526 · Dynamic Programming · 24</p>
+<aside>This extension builds on the knapsack and LCS tables. It fits right after slide 19 if there is time, or it can open a follow-up class: the first part (slides 25–30) takes about 15 minutes, and the space and constraints parts (slides 31–43) about 30 more. The plain-text lecture notes cover the same material in more detail, sections 1 to 11 of the discussion, with every piece of code checked against brute force.</aside>
+</section>
+<section id="md-dimension" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Several indices</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Dimension = indices in one state</h2>
+</div>
+<table style="font-size:28px;color:#15213B">
+<tr><th style="width:38%;text-align:left">Problem</th><th style="width:24%;text-align:left">State</th><th style="width:38%;text-align:left">Dimensions</th></tr>
+<tr><td>Fibonacci, coin change</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[i]</td><td>1</td></tr>
+<tr><td>0/1 knapsack</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">K[i][c]</td><td>2: items used, room left</td></tr>
+<tr><td>LCS of two strings</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">L[i][j]</td><td>2: a prefix of each string</td></tr>
+<tr><td>LCS of three strings</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">L[i][j][k]</td><td>3</td></tr>
+<tr><td>Knapsack, weight + volume</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">K[i][w][v]</td><td>3</td></tr>
+<tr><td>Floyd-Warshall paths</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">d[k][i][j]</td><td>3</td></tr>
+<tr><td>Traveling salesperson</td><td style="font-family:'JetBrains Mono', 'Courier New', monospace">dp[mask][j]</td><td>2, but mask has 2^n values</td></tr>
+</table>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">The five-step recipe does not change. What changes is how you choose the state, how big the table gets, and the fill order.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 25</p>
+<aside>The dimension of a DP is the number of indices needed to name one subproblem. Each index is a state variable: one piece of information you must know to finish the problem from that point. Everything in the main lecture was 1-D or 2-D. Point at the last row: in the traveling salesperson problem the state is only two indices, but one of them is a set of cities stored as a bitmask, so it has 2^n possible values. Floyd-Warshall is listed as 3-D because d[k][i][j] means the shortest i-to-j path using only cities 0..k as stops; slide 33 shows why it can be stored in 2-D.</aside>
+</section>
+<section id="md-state" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Several indices</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Choosing the state</h2>
+</div>
+<p style="font-family:'Source Serif 4', Georgia, serif;font-size:48px;line-height:1.3;color:#15213B">“If I stopped halfway, what would I have to write down so someone else could finish the job optimally?”</p>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#F7F5EF;padding:40px;border-radius:16px;border-top:8px solid #B04A15">
+<h3 style="font-size:36px;font-weight:600;color:#15213B">Knapsack: (i, c)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Only the items left and the room left matter, not which items were chosen.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#F7F5EF;padding:40px;border-radius:16px;border-top:8px solid #2C5F9E">
+<h3 style="font-size:36px;font-weight:600;color:#15213B">Add a volume limit: (i, w, v)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Now the volume left matters too, so it becomes a third index.</p>
+</div>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#15213B"><b>Missing a dimension?</b> Two histories reach the same state but need different decisions from there on.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 26</p>
+<aside>This question is the most useful tool for step 1 of the recipe when there are several constraints. Each independent item on the list you would write down becomes one dimension. Work the knapsack example: after deciding about the first i items, the best way to finish depends only on i and the capacity left. Adding a volume limit means the remaining volume also matters. The test at the bottom catches a state that is too small: if two different histories land in the same cell but the best future moves differ between them, the cell is mixing two situations and the state needs another piece of information.</aside>
+</section>
+<section id="md-cost-order" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Several indices</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Count the cells, then order them</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:64px;flex:1">
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<h3 style="font-size:36px;font-weight:600;color:#B04A15">Cost</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#15213B;background:#ECE8DD;padding:24px 32px;border-radius:12px">time = states × work per state</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568"><b>Three strings of length 100:</b> 101 × 101 × 101, about 1 million cells.</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568"><b>100 items, W = V = 1000:</b> about 100 million cells, slow in Python.</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Each dimension multiplies the table by its range. Add only the ones you need.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<h3 style="font-size:36px;font-weight:600;color:#B04A15">Fill order</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568"><b>Indices only decrease</b> (LCS, knapsack): nested increasing loops, in any nesting.</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568"><b>Intervals</b> dp[i][j]: loop over the length first.</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568"><b>Floyd-Warshall:</b> the k loop must be outermost.</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568"><b>Memoization:</b> the recursion finds the order for you.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 27</p>
+<aside>Two practical questions for any multidimensional table. Cost: the number of states is the product of the ranges of the indices, and each new dimension multiplies it. This is the curse of dimensionality; 100 million cells of Python lists is close to a gigabyte. Order: every cell may read only cells that are already filled, so find an order in which every arrow of the recurrence points backward. When every dependency has smaller indices, as in LCS and knapsack, any nesting of increasing loops works. Interval DP depends on shorter intervals, so loop over the length. In Floyd-Warshall, k means “may use cities 0..k as stops”, so it has to be the outer loop. With many dimensions, a memoized version is often the easiest correct first draft.</aside>
+</section>
+<section id="md-lcs3" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · 3-D example</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">LCS of three strings</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1">
+<div style="width:1040px;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:32px;line-height:1.4;color:#15213B"><b>Subproblem:</b> L[i][j][k] = LCS length of a[:i], b[:j] and c[:k].</p>
+<div style="background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.55;color:#E9E6DC;white-space:nowrap"><span style="color:#93A4BF"># any index is 0:</span><br>L[i][j][k] = 0<br><span style="color:#93A4BF"># all three last letters equal:</span><br>L[i][j][k] = L[i-1][j-1][k-1] + 1<br><span style="color:#93A4BF"># otherwise drop one last letter:</span><br>L[i][j][k] = max(L[i-1][j][k],<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j-1][k], L[i][j][k-1])</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#ECE8DD;padding:40px;border-radius:16px">
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#15213B">Why not run 2-string LCS twice?</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#B04A15">a = "AB"<br>b = "BA"<br>c = "B"</p>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">LCS(a, b) may return “A”, and “A” shares nothing with c: 0.</p>
+<p style="font-size:28px;line-height:1.4;color:#15213B"><b>True answer: 1 (“B”).</b> The third index keeps every option open.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 28</p>
+<aside>This is the gentlest 3-D example because the recurrence is the 2-D one with one more term. If all three last letters match, that letter can end the common subsequence. Otherwise at least one of the three last letters is not in it, so drop each in turn and keep the best. Work the counterexample on the board: the LCS of AB and BA has length 1 and can be either A or B. A program that happens to pick A then finds nothing in common with c = B, but the true three-way answer is 1. Solving in two passes throws away information that the third index keeps.</aside>
+</section>
+<section id="md-lcs3-code" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · 3-D example</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Three-string LCS in Python</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1080px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def lcs3(a, b, c):<br>&#160;&#160;&#160;&#160;p, q, r = len(a), len(b), len(c)<br>&#160;&#160;&#160;&#160;L = [[[0] * (r + 1) for _ in range(q + 1)]<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for _ in range(p + 1)]<br>&#160;&#160;&#160;&#160;for i in range(1, p + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for j in range(1, q + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for k in range(1, r + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if a[i - 1] == b[j - 1] == c[k - 1]:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j][k] = L[i - 1][j - 1][k - 1] + 1<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;else:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j][k] = max(L[i - 1][j][k],<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j - 1][k],<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;L[i][j][k - 1])<br>&#160;&#160;&#160;&#160;return L[p][q][r]</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Time O(p · q · r)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">One O(1) step per cell.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Example</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">BACDB, BDCB, BCDB: 150 cells, answer 3 (BCB or BDB).</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Top-down</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">@lru_cache on L(i, j, k) caches by the tuple of indices.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 29</p>
+<aside>Same shape as the 2-D version, with a third loop. Point out the comprehension that builds the 3-D list: every level except the innermost uses a for, never list multiplication, or the rows would be shared (section 10 of the text file covers this aliasing bug). The memoized version in the text file is a nested function L(i, j, k) with @lru_cache, which caches by the tuple of arguments and is often easier to write first.</aside>
+</section>
+<section id="md-knap2" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · 3-D example</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Knapsack with two limits</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:64px;flex:1">
+<div style="width:600px;display:flex;flex-direction:column;gap:24px">
+<table style="font-size:30px;color:#15213B">
+<tr><th style="width:22%;text-align:left">Item</th><th style="width:26%;text-align:center">Weight</th><th style="width:26%;text-align:center">Volume</th><th style="width:26%;text-align:center">Value</th></tr>
+<tr><td>A</td><td style="text-align:center">1</td><td style="text-align:center">4</td><td style="text-align:center">1</td></tr>
+<tr><td>B</td><td style="text-align:center">3</td><td style="text-align:center">1</td><td style="text-align:center">4</td></tr>
+<tr><td>C</td><td style="text-align:center">4</td><td style="text-align:center">3</td><td style="text-align:center">5</td></tr>
+<tr><td>D</td><td style="text-align:center">5</td><td style="text-align:center">2</td><td style="text-align:center">7</td></tr>
+</table>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">The lecture’s items, each with a volume. Weight limit 7.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:30px;line-height:1.4;color:#15213B"><b>Subproblem:</b> K[i][w][v] = best value from the first i items with weight ≤ w and volume ≤ v.</p>
+<div style="background:#15213B;border-radius:16px;padding:32px 40px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.55;color:#E9E6DC;white-space:nowrap">skip = K[i-1][w][v]<br>take = K[i-1][w - wt[i]][v - vol[i]] + val[i]<br><span style="color:#F0A35E">K[i][w][v] = max(skip, take)</span> <span style="color:#93A4BF"># if both fit</span></p>
+</div>
+<div style="display:flex;flex-direction:row;gap:24px">
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B;background:#ECE8DD;padding:24px;border-radius:12px"><b>Volume ≤ 4:</b> B + C fits, value 9</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B;background:#ECE8DD;padding:24px;border-radius:12px"><b>Volume ≤ 3:</b> B + C is too bulky; D alone, value 7</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 30</p>
+<aside>One extra constraint means one extra dimension. The recurrence is the knapsack one from slide 13 with the volume carried along: skipping the item leaves both limits alone, and taking it uses up some weight and some volume. With a volume limit of 4, the answer from the main lecture survives: B and C weigh 7 and take up exactly 4. Tighten the volume to 3 and B plus C no longer fits, so the best is D alone for 7. The time is O(n·W·V). The full knapsack2 code is in the text file, section 6.</aside>
+</section>
+<section id="sp-overview" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Saving space</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Which earlier cells does a cell read?</h2>
+</div>
+<table style="font-size:26px;color:#15213B">
+<tr><th style="width:24%;text-align:left">Technique</th><th style="width:48%;text-align:left">Use it when</th><th style="width:28%;text-align:left">Space</th></tr>
+<tr><td><b>Few variables</b></td><td>dp[i] reads a fixed number of cells back</td><td>O(1)</td></tr>
+<tr><td><b>Two rows</b></td><td>row i reads only row i − 1</td><td>2 rows</td></tr>
+<tr><td><b>One row</b></td><td>the same, plus the right loop direction</td><td>1 row</td></tr>
+<tr><td><b>Shorter axis</b></td><td>the two sequences differ in length</td><td>O(min(m, n))</td></tr>
+<tr><td><b>Two layers</b></td><td>a 3-D layer reads only the layer before</td><td>2 layers of 2-D</td></tr>
+<tr><td><b>Reachable states</b></td><td>most of the table can never be reached</td><td>states visited</td></tr>
+<tr><td><b>Decision bytes</b></td><td>you need trace back with little memory</td><td>1 byte per cell</td></tr>
+<tr><td><b>Hirschberg</b></td><td>you need the LCS itself for huge strings</td><td>O(min(m, n))</td></tr>
+</table>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 31</p>
+<aside>About 15 minutes into the extension. A full table is the easiest way to get a DP right, and you need it for trace back, but once the answers are correct it can often be made much smaller. Every row of this table comes from one question: which earlier cells does a cell read? Call that its dependency window; anything that no remaining cell will read can be thrown away. Examples for the first rows: fib_two_vars keeps two variables; LCS keeps two rows; 0/1 knapsack keeps one row looped downward. Reachable states means storing a dict or set of the states that exist, for example the subset sums of [100, 250, 400] are only 8 values, not a list of 751. Advice for students: get the full-table version right first, keep it as a test oracle, then shrink the space and check that the answers still match.</aside>
+</section>
+<section id="sp-direction" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Saving space</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">One row: the loop direction matters</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">0/1 knapsack: loop downward</h3>
+<div style="background:#15213B;border-radius:16px;padding:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def knapsack_1d(weights, values, cap):<br>&#160;&#160;&#160;&#160;best = [0] * (cap + 1)<br>&#160;&#160;&#160;&#160;for w, v in zip(weights, values):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;<span style="color:#F0A35E">for c in range(cap, w - 1, -1):</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;best[c] = max(best[c], best[c - w] + v)<br>&#160;&#160;&#160;&#160;return best[cap]</p>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">knapsack_1d([2], [3], 4) is <b>3</b>: the item once.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<h3 style="font-size:32px;font-weight:600;color:#2C5F9E">Unbounded: loop upward</h3>
+<div style="background:#15213B;border-radius:16px;padding:32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def knapsack_unbounded(weights, values, cap):<br>&#160;&#160;&#160;&#160;best = [0] * (cap + 1)<br>&#160;&#160;&#160;&#160;for w, v in zip(weights, values):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;<span style="color:#8DB4E8">for c in range(w, cap + 1):</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;best[c] = max(best[c], best[c - w] + v)<br>&#160;&#160;&#160;&#160;return best[cap]</p>
+</div>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">knapsack_unbounded([2], [3], 4) is <b>6</b>: the item twice.</p>
+</div>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#15213B">Same body, opposite direction, different problem. If a cell reads to its left in the <b>old</b> row, loop from right to left.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 32</p>
+<aside>This is the slide to slow down on. In 0/1 knapsack, cell c of the new row reads cell c − w of the OLD row. Looping c downward means that when we read best[c − w] it has not been overwritten for this item yet, so it still holds the old row’s value. Loop upward and best[c − w] may already include this item, so the item gets counted again; that is exactly the unbounded knapsack, where each item may be reused. Trace the tiny example on the board: one item of weight 2 and value 3, capacity 4. Downward: best[4] reads the old best[2] = 0, giving 3. Upward: best[2] becomes 3 first, then best[4] reads it and becomes 6. The rule to remember is the last line: draw the arrows, and loop against them.</aside>
+</section>
+<section id="sp-lcs-row" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Saving space</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">LCS in one row: save the diagonal</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:960px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def lcs_one_row(x, y):<br>&#160;&#160;&#160;&#160;row = [0] * (len(y) + 1)<br>&#160;&#160;&#160;&#160;for i in range(1, len(x) + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;diag = 0 <span style="color:#93A4BF"># L[i-1][j-1]</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for j in range(1, len(y) + 1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;saved = row[j] <span style="color:#93A4BF"># L[i-1][j], about to change</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if x[i - 1] == y[j - 1]:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;row[j] = diag + 1<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;else:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;row[j] = max(row[j], row[j - 1])<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;diag = saved<br>&#160;&#160;&#160;&#160;return row[len(y)]</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">The problem</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">The diagonal L[i-1][j-1] was overwritten one step ago.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">The fix</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Save it in diag before overwriting, one cell at a time.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Same trick in 3-D</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Floyd-Warshall updates one 2-D table in place.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 33</p>
+<aside>LCS reads three neighbours: above, left and the diagonal. In a single row, “above” is the value still sitting in row[j] before we overwrite it, and “left” is row[j − 1], already updated for this row, which is what we want. Only the diagonal is lost, because it was row[j − 1] before the previous step overwrote it. So we carry it along in diag. Another useful move: put the shorter string on the row axis, so the space is O(min(m, n)); for strings of length 1,000,000 and 100 that is a row of 101 cells. For three strings, lcs3 needs only two 2-D layers, O(q·r) space. Floyd-Warshall goes further and keeps a single 2-D table updated in place. That is safe because pass k never changes row k or column k: d[i][k] + d[k][k] is just d[i][k], since d[k][k] = 0.</aside>
+</section>
+<section id="sp-traceback" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Saving space</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Getting the choices back</h2>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">Rolling rows lose step 5, the trace back. Three ways to recover it:</p>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Decision bytes</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Keep values in one row, and one byte per cell (taken or not) in a bytearray.</p>
+<p style="font-size:24px;line-height:1.4;color:#B04A15">About 8 times smaller than all the values</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Checkpoints</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Save every s-th row. To trace back, recompute the rows between two checkpoints.</p>
+<p style="font-size:24px;line-height:1.4;color:#B04A15">O(sqrt(m) · n) space, about 2× time</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Hirschberg</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Find where the answer crosses the middle row, split there, and recurse on both halves.</p>
+<p style="font-size:24px;line-height:1.4;color:#B04A15">An actual LCS in O(min(m, n)) space</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 34</p>
+<aside>A rolled table gives the value but not the choices behind it. Decision bytes: knapsack_with_items in the text file keeps the values in a single row and records, in a bytearray, whether each item improved each capacity. A list slot holds an 8-byte reference, so the decisions are about 8 times smaller than the full value table, and the trace back walks them from the last item to the first. Checkpoints: store every s-th row during the forward pass; with s about the square root of the number of rows, the memory is O(sqrt(m)·n) and the extra time roughly doubles the work. Hirschberg’s algorithm, for LCS and edit distance: compute the middle row from the top and again from the bottom on the reversed strings, find the column where the best answer crosses the middle, and solve the two halves the same way. It gives an actual LCS in O(m·n) time and linear space, which is why it is used to align very long DNA sequences.</aside>
+</section>
+<section id="cx-levers" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Complex constraints</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Two levers for hard rules</h2>
+</div>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">At most k of something · never two in a row · a cooldown · a capacity of a billion · negative numbers</p>
+<div style="display:flex;flex-direction:row;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#ECE8DD;padding:48px;border-radius:16px;border-top:8px solid #B04A15">
+<h3 style="font-size:44px;font-weight:600;color:#15213B">A. Tweak the state</h3>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">Make the state record what the rule depends on, or reshape it so the table stays small.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#ECE8DD;padding:48px;border-radius:16px;border-top:8px solid #2C5F9E">
+<h3 style="font-size:44px;font-weight:600;color:#15213B">B. Speed up transitions</h3>
+<p style="font-size:32px;line-height:1.4;color:#4A5568">Keep the same states, and make the work for each one cheaper.</p>
+</div>
+</div>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#15213B">cost = (number of states) × (work per state)</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 35</p>
+<aside>About 30 minutes into the extension. Real problems arrive with extra rules. Read the list at the top and ask students which lever each one needs; most need lever A. Tie it to the formula at the bottom: lever A changes the first factor, either by adding information the rule needs or by reshaping the state so there are fewer states; lever B attacks the second factor, the work per state. The next three slides are lever A, then three slides of lever B, then a checklist that combines them.</aside>
+</section>
+<section id="cx-state" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Lever A</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Tweaking the state definition</h2>
+</div>
+<table style="font-size:26px;color:#15213B">
+<tr><th style="width:36%;text-align:left">The rule</th><th style="width:30%;text-align:left">The tweak</th><th style="width:34%;text-align:left">Example</th></tr>
+<tr><td>Limits a count (“at most k”)</td><td><b>Add a counter index</b></td><td>Knapsack with ≤ m items</td></tr>
+<tr><td>Depends on the previous step</td><td><b>Add a mode index</b></td><td>Paint houses, stock cooldown</td></tr>
+<tr><td>One index has a huge range</td><td><b>Swap index and value</b></td><td>Knapsack indexed by value</td></tr>
+<tr><td>Values can be negative</td><td><b>Shift by an offset</b></td><td>Target sum: index s + S</td></tr>
+<tr><td>A variable can be computed</td><td><b>Drop it</b></td><td>Two walkers: r + c = t</td></tr>
+<tr><td>Depends on which items</td><td><b>Bitmask of the set</b></td><td>Traveling salesperson</td></tr>
+<tr><td>Forbids some states</td><td><b>Impossible value</b></td><td>Exactly-full knapsack</td></tr>
+</table>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#15213B;background:#ECE8DD;padding:24px 32px;border-radius:12px;white-space:nowrap">best = [0] + [float("-inf")] * cap&#160;&#160;<span style="color:#B04A15"># exactly c, not at most c</span></p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 36</p>
+<aside>Walk the rows. Counter: knapsack with at most m items keeps best[j][c] for j items, looping both j and c downward so each item is used once; with the lecture items and m = 1 the answer drops to 7 (D alone), with m = 2 it is 9 (B and C). Mode: when a rule depends on the previous step, add an index with a few values describing the recent past; slide 38 shows paint houses. Swap index and value: slide 37. Offset: in target sum, partial sums run from −S to S, so store sum s at index s + S; beware that dp[−1] in Python silently reads the last element instead of failing. Drop computable variables: two people walking a grid together have state (r1, c1, r2, c2), but after t steps r + c = t for both, so (t, r1, r2) is enough. Bitmask: when the rule depends on which items have been used, the state records a set. Impossible values: a rule that only forbids states needs no new index; mark those states with infinity, minus infinity or 0. The code line shows the most surprising case: initializing with minus infinity instead of zeros turns “weight at most c” into “weight exactly c”.</aside>
+</section>
+<section id="cx-swap" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Lever A</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Huge capacity? Index by value</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1110px;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:30px;line-height:1.4;color:#15213B"><b>New subproblem:</b> least[t] = the smallest weight that reaches a total value of exactly t.</p>
+<div style="background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def knapsack_by_value(weights, values, cap):<br>&#160;&#160;&#160;&#160;INF = float("inf")<br>&#160;&#160;&#160;&#160;total = sum(values)<br>&#160;&#160;&#160;&#160;least = [0] + [INF] * total<br>&#160;&#160;&#160;&#160;for w, v in zip(weights, values):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for t in range(total, v - 1, -1):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;least[t] = min(least[t], least[t - v] + w)<br>&#160;&#160;&#160;&#160;return max(t for t in range(total + 1) if least[t] &lt;= cap)</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Capacity 2 billion</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Values 3 and 5 make a table of only 9 cells. Answer: 5.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Time</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">O(n · sum of values), not O(n · capacity).</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Lecture items</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Still 9, as on slide 14.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 37</p>
+<aside>When one index has a huge range, look for another quantity with a small range and make it the index instead. A knapsack with capacity two billion cannot have a capacity index. But if the values are small, swap the roles: the index is the total value, and the stored number is the least weight that achieves it. The answer is the largest value whose least weight fits. The example call in the text file is knapsack_by_value([10**9, 2 * 10**9], [3, 5], 2 * 10**9): the two items together weigh three billion, which is too much, so the best is the second item alone, value 5. The table has sum(values) + 1 = 9 cells. The loop still runs downward, for the same reason as slide 32: each item is used once.</aside>
+</section>
+<section id="cx-mode" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Lever A</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">A mode index for “not twice in a row”</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:1110px;display:flex;flex-direction:column;gap:24px">
+<p style="font-size:30px;line-height:1.4;color:#15213B"><b>Paint houses:</b> neighbors must differ in color. State = (house, its color).</p>
+<div style="background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.45;color:#E9E6DC;white-space:nowrap">def paint_houses(cost):<br>&#160;&#160;&#160;&#160;prev = [0] * len(cost[0]) <span style="color:#93A4BF"># prev[c]: cheapest, ends in c</span><br>&#160;&#160;&#160;&#160;for row in cost:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;curr = []<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;for c in range(len(row)):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;others = [prev[d] for d in range(len(row)) if d != c]<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;curr.append(row[c] + min(others))<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;prev = curr<br>&#160;&#160;&#160;&#160;return min(prev)</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">Example</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Costs [[17, 2, 17], [16, 16, 5], [14, 3, 19]] give 10: 2 + 5 + 3.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#B04A15">The pattern</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Each mode is a value of the new index; each allowed arrow is a transition.</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 38</p>
+<aside>If a rule depends on what happened at the previous step, add an index with a few values that describe the recent past. Here the only thing about the past that matters is the color of the last house, so the state is (house, color), and the house index is rolled away as on slide 31. The example picks colors 1, 2, 1 counting from 0, costing 2 + 5 + 3 = 10. The general habit is to draw the rule as a small state machine. Stock trading with a one-day cooldown has three modes: holding a share, just sold, and resting; the arrows say you may buy only from resting. max_non_adjacent in the text file is the same idea with two modes, take and skip.</aside>
+</section>
+<section id="cx-transitions" data-transition="fade" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#2C5F9E;letter-spacing:2px;text-transform:uppercase">Extension · Lever B</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Faster transitions</h2>
+</div>
+<table style="font-size:28px;color:#15213B">
+<tr><th style="width:40%;text-align:left">The inner loop computes</th><th style="width:28%;text-align:left">Technique</th><th style="width:32%;text-align:left">Time</th></tr>
+<tr><td>A sum over the last k cells</td><td><b>Prefix sums</b></td><td>O(n·k) → O(n)</td></tr>
+<tr><td>A max or min over a sliding window</td><td><b>Monotonic deque</b></td><td>O(n·k) → O(n)</td></tr>
+<tr><td>A place in a sorted helper list</td><td><b>Binary search</b></td><td>O(n²) → O(n log n)</td></tr>
+<tr><td>The best of every earlier state</td><td><b>Running best</b></td><td>O(n²) → O(n)</td></tr>
+<tr><td>Up to c copies of one item</td><td><b>Power-of-two bundles</b></td><td>O(c) → O(log c) per item</td></tr>
+</table>
+<div style="background:#ECE8DD;border-radius:16px;padding:32px 40px;display:flex;flex-direction:column;gap:12px">
+<h3 style="font-size:32px;font-weight:600;color:#15213B">Names to recognize</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Convex hull trick · Knuth’s optimization · divide-and-conquer optimization. Each needs a proof that its condition holds.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 39</p>
+<aside>Lever B keeps the states and cuts the work per state. If dp[i] looks back at k earlier cells, the total is O(n·k), and many of those inner loops are a sum, minimum or maximum over a range. Prefix sums: climbing 1 to k stairs at a time, ways[i] is the sum of the previous k values; with prefix[i] = ways[0] + … + ways[i − 1], that sum is prefix[i] − prefix[i − k], so climb_ways(10, 3) = 274 takes O(n) for any k. Running best: for buying a stock once and selling later, keep the lowest price so far instead of rescanning every earlier day; best_profit([7, 1, 5, 3, 6, 4]) is 5. Bundles: an item available 10 times becomes bundles of 1, 2, 4 and 3, four 0/1 items that can make any count from 0 to 10. The next two slides show the deque and the binary search. The last row of names is for recognition only: the convex hull trick handles transitions that are a minimum over lines; Knuth’s optimization speeds up interval DPs like the optimal binary search tree from O(n³) to O(n²); the divide-and-conquer optimization applies when the best split point never decreases.</aside>
+</section>
+<section id="cx-deque" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#2C5F9E;letter-spacing:2px;text-transform:uppercase">Extension · Lever B</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Sliding-window max with a deque</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:980px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.45;color:#E9E6DC;white-space:nowrap">from collections import deque<br><br>def max_jump_score(nums, k):<br>&#160;&#160;&#160;&#160;dp = [0] * len(nums)<br>&#160;&#160;&#160;&#160;dp[0] = nums[0]<br>&#160;&#160;&#160;&#160;window = deque([0]) <span style="color:#93A4BF"># indices, dp decreasing</span><br>&#160;&#160;&#160;&#160;for i in range(1, len(nums)):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;while window[0] &lt; i - k:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;window.popleft() <span style="color:#93A4BF"># out of the window</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;dp[i] = nums[i] + dp[window[0]]<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;while window and dp[window[-1]] &lt;= dp[i]:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;window.pop() <span style="color:#93A4BF"># never the max again</span><br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;window.append(i)<br>&#160;&#160;&#160;&#160;return dp[-1]</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#2C5F9E">The problem</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Jump 1 to k squares at a time; maximize the sum you land on.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#2C5F9E">O(n), not O(n · k)</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Each index enters and leaves the deque once.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<h3 style="font-size:32px;font-weight:600;color:#2C5F9E">Example</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">[1, −1, −2, 4, −7, 3], k = 2: 7 (1 − 1 + 4 + 3)</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 40</p>
+<aside>The recurrence is dp[i] = nums[i] + the maximum of dp[i − k] through dp[i − 1]. Recomputing that maximum costs k per cell. The deque holds indices whose dp values decrease from front to back, so the front is always the maximum of the window. Two rules keep it that way. First, drop indices from the front once they are more than k back. Second, before adding i, pop every index from the back whose dp value is no better than dp[i]: it is older and no larger, so it can never be the maximum again. Each index is pushed once and popped at most once, so the whole loop is O(n). For a sliding minimum, flip the comparison.</aside>
+</section>
+<section id="cx-lis" style="background:#F7F5EF;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#2C5F9E;letter-spacing:2px;text-transform:uppercase">Extension · Lever B</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">LIS in O(n log n) with bisect</h2>
+</div>
+<p style="font-size:30px;line-height:1.4;color:#15213B"><b>New state:</b> tails[L] = the smallest value that can end an increasing subsequence of length L + 1. It is always sorted.</p>
+<div style="display:flex;flex-direction:row;gap:48px;flex:1;align-items:center">
+<div style="width:760px;background:#15213B;border-radius:16px;padding:40px 48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.4;color:#E9E6DC;white-space:nowrap">from bisect import bisect_left<br><br>def lis_length(nums):<br>&#160;&#160;&#160;&#160;tails = []<br>&#160;&#160;&#160;&#160;for x in nums:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;pos = bisect_left(tails, x)<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;if pos == len(tails):<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;tails.append(x)<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;else:<br>&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;tails[pos] = x<br>&#160;&#160;&#160;&#160;return len(tails)</p>
+</div>
+<table style="width:856px;font-size:24px;color:#15213B;font-family:'JetBrains Mono', 'Courier New', monospace">
+<tr><th style="width:22%;text-align:left">x</th><th style="width:78%;text-align:left">tails after x</th></tr>
+<tr><td>10</td><td>[10]</td></tr>
+<tr><td>9</td><td>[9]</td></tr>
+<tr><td>2</td><td>[2]</td></tr>
+<tr><td>5</td><td>[2, 5]</td></tr>
+<tr><td>3</td><td>[2, 3]</td></tr>
+<tr><td>7</td><td>[2, 3, 7]</td></tr>
+<tr><td>101</td><td>[2, 3, 7, 101]</td></tr>
+<tr><td>18</td><td style="color:#B04A15"><b>[2, 3, 7, 18]: length 4</b></td></tr>
+</table>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 41</p>
+<aside>The practice problem from slide 22 solved the slow way is O(n²): dp[i] = 1 + the best dp[j] over earlier, smaller values. This version uses both levers. Lever A changes the state: the index is now a length and the stored value is the smallest possible last element, a swap of index and value as on slide 37. That new state is always sorted, which is what makes lever B possible: each new number finds its place with a binary search. Walk the table: 9 replaces 10 because a shorter, smaller ending is always at least as useful; 3 replaces 5 for the same reason; 18 replaces 101. The final length, 4, is the answer. Warn students that tails itself is not always an actual increasing subsequence, only its length is guaranteed; here [2, 3, 7, 18] happens to be one.</aside>
+</section>
+<section id="cx-checklist" data-transition="fade" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Putting it together</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">A checklist for constrained problems</h2>
+</div>
+<div style="display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:row;gap:32px;align-items:center;background:#F7F5EF;padding:20px 32px;border-radius:12px">
+<p style="width:56px;font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1;color:#B04A15">1</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B">Write the plain recurrence. Ignore the hard rule at first.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px;align-items:center;background:#F7F5EF;padding:20px 32px;border-radius:12px">
+<p style="width:56px;font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1;color:#B04A15">2</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B">For each rule: forbids states → impossible value; counts → counter; previous step → mode; a set → bitmask.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px;align-items:center;background:#F7F5EF;padding:20px 32px;border-radius:12px">
+<p style="width:56px;font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1;color:#B04A15">3</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B">Count the states. An index with a huge range → swap index and value, or drop variables you can compute.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px;align-items:center;background:#F7F5EF;padding:20px 32px;border-radius:12px">
+<p style="width:56px;font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1;color:#2C5F9E">4</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B">Check each inner loop: range sum → prefix sums; sliding max or min → deque; sorted list → binary search; all earlier → running best.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px;align-items:center;background:#F7F5EF;padding:20px 32px;border-radius:12px">
+<p style="width:56px;font-family:'Source Serif 4', Georgia, serif;font-size:56px;font-weight:600;line-height:1;color:#2C5F9E">5</p>
+<p style="flex:1;font-size:28px;line-height:1.4;color:#15213B">Only then shrink the space, and test against the full-table version.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 42</p>
+<aside>This checklist combines the extension into one procedure; steps 2 and 3 are lever A and step 4 is lever B. Try it live on a problem students have not seen, for example “longest path in a grid that turns at most k times”: the plain recurrence moves right or down; the turn limit is a counter; whether the last move was right or down is a mode; so the state is (row, column, turns used, last direction). Step 5 is a reminder that space comes last: shrink only a version that is already correct, and keep the slow version to compare against.</aside>
+</section>
+<section id="md-practice" style="background:#ECE8DD;color:#15213B;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#B04A15;letter-spacing:2px;text-transform:uppercase">Extension · Your turn</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:72px;font-weight:600;line-height:1.1;color:#15213B">Practice with constraints</h2>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Houses on a circle</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Largest sum with no two adjacent numbers, where the first and last also count as adjacent.</p>
+<p style="font-size:24px;line-height:1.5;color:#B04A15">Hint: run max_non_adjacent twice</p>
+<p style="font-size:24px;line-height:1.5;color:#5F6673">[2, 3, 2] gives 3; [1, 2, 3, 1] gives 4</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Stock with a cooldown</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Trade as often as you like with at most one share, but wait a day after each sale.</p>
+<p style="font-size:24px;line-height:1.5;color:#B04A15">Hint: holding, just sold, resting</p>
+<p style="font-size:24px;line-height:1.5;color:#5F6673">[1, 2, 3, 0, 2] gives a profit of 3</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#F7F5EF;padding:40px;border-radius:16px">
+<h3 style="font-size:36px;font-weight:600;line-height:1.2;color:#15213B">Exactly k items, sum S</h3>
+<p style="font-size:28px;line-height:1.4;color:#4A5568">Count the ways to choose exactly k numbers that add up to S.</p>
+<p style="font-size:24px;line-height:1.5;color:#B04A15">Hint: dp[i][j][s]</p>
+<p style="font-size:24px;line-height:1.5;color:#5F6673">[1, 2, 3, 4, 5], k = 2, S = 6 gives 2</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5F6673">CS 526 · Dynamic Programming · 43</p>
+<aside>One problem per lever. Houses on a circle: the first and last cannot both be taken, so solve the straight-line problem twice, once without the first number and once without the last, and keep the better answer. Stock with a cooldown: three modes, holding a share, just sold today, and resting; you may only buy from resting; prices [1, 2, 3, 0, 2] give 3 (buy at 1, sell at 2, rest, buy at 0, sell at 2). Exactly k items with sum S adds a counter index j to subset sum; the two ways in the check are {1, 5} and {2, 4}. As a stretch goal, ask students to roll the i index away and say which loops must run downward.</aside>
 </section>
 </div>
 <div id="notes"></div>

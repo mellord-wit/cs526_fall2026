@@ -1,12 +1,75 @@
 DYNAMIC PROGRAMMING
-CS 526 - Additional Lecture (about 60 minutes)
+CS 526 - Additional Lecture (60 minutes, expandable to 2.5 hours)
 
 Plain-text version of dynamic_programming_lecture.html. Each slide is
 followed by its speaker notes. The code from the slides is in
 dynamic_programming_examples.py. A discussion of multidimensional
 dynamic programming follows slide 19 as an optional extension. It
 includes space optimization techniques and how to handle complex
-constraints.
+constraints. The lecture plan below shows how to run the lecture
+for 60 minutes up to 2 hours 30 minutes.
+
+======================================================================
+LECTURE PLAN: 60 MINUTES UP TO 2.5 HOURS
+======================================================================
+
+The slides were written for a 60-minute class. This file expands the
+lecture to as much as 2 hours 30 minutes, including a 10-minute
+break. The extra material is in blocks marked EXPANSION A to G,
+placed where they fit in the flow, plus the multidimensional
+discussion and slides 24-43.
+
+Time cues in the speaker notes ("about 23 minutes in") refer to the
+60-minute version. For the longer versions, use the start times
+below instead.
+
+Full plan (2 hours 30 minutes)
+------------------------------
+
+Start  Min  Slides      Topic
+-----  ---  ----------  ----------------------------------------------
+0:00     4  1-2         Welcome and plan
+0:04     8  3-4         Fibonacci and the recursion tree
+0:12     4  5           The two properties of DP problems
+0:16     7  Exp. A      When DP applies, and when it does not
+0:23     9  6-8         Memoization vs. tabulation
+0:32     5  Exp. B      Live demo: timing, the cache, recursion limit
+0:37     3  9           The five-step recipe
+0:40     8  10-12       Example 1: coin change
+0:48     6  Exp. C      Counting ways: combinations vs. orderings
+0:54    11  13-16       Example 2: 0/1 knapsack
+1:05     8  Exp. D      In-class exercise: equal-sum partition
+1:13    10  -           Break
+1:23     8  17-19       Example 3: longest common subsequence
+1:31     9  Exp. E      Worked example: edit distance
+1:40     7  Exp. F      Interval DP: matrix-chain multiplication
+1:47    12  24-30       Multidimensional DP (discussion 1-6)
+1:59     8  31-34       Space optimization (discussion 7)
+2:07    11  35-42       Complex constraints (discussion 8-9)
+2:18     5  20-21       Patterns and pitfalls (discussion 10)
+2:23     7  22, 43, 23  Practice and summary (discussion 11)
+2:30        -           End
+
+Expansion G (writing up a DP solution) is a handout or homework
+guide; it takes no class time.
+
+Shorter versions
+----------------
+
+* 60 minutes
+    Slides 1-23 exactly as written, in order.
+* About 90 minutes
+    The 60-minute version plus expansions A, B and E, and
+    discussion sections 1-6 (slides 24-30) after slide 19. No break.
+* About 2 hours
+    The 90-minute version plus expansions C and D, the break, and
+    discussion section 7 (slides 31-34).
+* 2 hours 30 minutes
+    The full plan above.
+
+If you run short on time, cut in this order: expansion F, discussion
+section 9 (bitmask DP), expansion C, discussion sections 8.8-8.13.
+Keep the break, the three main examples and the summary.
 
 ----------------------------------------------------------------------
 SLIDE 1 OF 23
@@ -155,6 +218,87 @@ Speaker notes:
   meant planning with a table, not writing code.
 
 ----------------------------------------------------------------------
+EXPANSION A: WHEN DP APPLIES, AND WHEN IT DOES NOT
+----------------------------------------------------------------------
+
+[2.5-hour plan · after slide 5 · 0:16-0:23, 7 minutes]
+
+Slide 5 named the two properties. This block tests them on problems
+students already know, including two where DP is the wrong tool.
+
+A.1 No overlapping subproblems: merge sort
+==========================================
+
+Merge sort splits a list in half, sorts each half and merges. On a
+list of 8 elements it makes 15 recursive calls, and all 15 work on
+different ranges of the list. Every subproblem is new, so a memo
+table would never get a single hit. Merge sort is divide and
+conquer, not DP.
+
+Compare Fibonacci: fib(30) makes 2,692,537 calls but there are only
+31 different subproblems, fib(0) to fib(30). The gap between calls
+and distinct subproblems is exactly what memoization removes.
+
+    Quick test: count the distinct subproblems. If that number is
+    much smaller than the number of recursive calls, DP will help.
+
+A.2 No optimal substructure: the longest simple path
+====================================================
+
+Take four towns q, r, s, t joined in a ring: q-r, r-t, t-s, s-q.
+
+* Shortest paths have optimal substructure
+    A shortest path from q to t through r is made of a shortest path
+    from q to r and a shortest path from r to t.
+* Longest simple paths do not
+    (A simple path never repeats a town.) The longest simple path
+    from q to t is q-r-t, length 2. Its piece from q to r has
+    length 1, but the longest simple path from q to r is q-s-t-r,
+    length 3. Glue that onto r-t and the path visits t twice, which
+    is not allowed.
+
+The best answer to the big problem is not built from the best
+answers to the small ones, so there is no recurrence to write. No
+efficient algorithm is known for longest simple paths in general.
+
+A.3 DP vs. greedy vs. divide and conquer
+========================================
+
+* Greedy
+    Makes one choice per step and never undoes it. Example: making
+    change with US coins (1, 5, 10, 25).
+* Divide and conquer
+    Splits the problem into independent pieces that never repeat.
+    Example: merge sort.
+* Dynamic programming
+    Compares every choice, and stores the answers to overlapping
+    subproblems so each is solved once. Example: making change with
+    coins [1, 3, 4].
+
+Greedy is fastest when it is correct, but it needs a proof that the
+locally best choice is always safe. DP needs no such proof: it tries
+every choice, and the table makes that affordable.
+
+A.4 Quick check for the class
+=============================
+
+Ask for a show of hands on each one.
+
+* Binary search
+    Not DP. Each step discards half; no subproblem repeats.
+* Counting right/down paths in a grid
+    DP. paths(r, c) is reached from many different routes.
+* Finding the maximum of a list
+    Not DP. One pass, nothing repeats.
+* Fewest coins for an amount
+    DP, unless the coin system is one where greedy is proven safe.
+
+Teaching notes:
+  Draw the four-town ring on the board; the longest-path example is
+  short but surprises most students. The table in A.3 is a good
+  place to restate that DP is "try everything, but remember".
+
+----------------------------------------------------------------------
 SLIDE 6 OF 23
 ----------------------------------------------------------------------
 
@@ -270,6 +414,67 @@ Speaker notes:
   recurrence first, memoize to test it, then convert to a table if
   speed or depth matters. That is about 20 minutes in; next is the
   recipe.
+
+----------------------------------------------------------------------
+EXPANSION B: LIVE DEMO
+----------------------------------------------------------------------
+
+[2.5-hour plan · after slide 8 · 0:32-0:37, 5 minutes]
+
+Run these in a Python shell after `from dynamic_programming_examples
+import *` (run it from the AdditionalLectures folder), or paste them
+at the bottom of that file.
+
+B.1 Timing the three versions
+=============================
+
+    import time
+
+    def timed(f, n):
+        start = time.perf_counter()
+        f(n)
+        return time.perf_counter() - start
+
+    for f in (fib_naive, fib_memo, fib_table):
+        print(f.__name__, f"{timed(f, 30):.6f} s")
+
+Times vary by machine, but expect a few tenths of a second for
+fib_naive(30) and well under a millisecond for the other two, a
+difference of about a thousand times. Then try fib_naive(32) and
+fib_naive(35): each step of 1 in n multiplies the time by about
+1.6, so n = 35 takes roughly 11 times as long as n = 30.
+
+B.2 Looking inside the cache
+============================
+
+    fib_lru(40)
+    fib_lru.cache_info()
+    # CacheInfo(hits=38, misses=41, maxsize=None, currsize=41)
+
+41 misses: fib(0) through fib(40) are each computed once. 38 hits:
+every later request for an already-solved value. Together that is
+79 calls, the same count as slide 6.
+
+B.3 Hitting the recursion limit
+===============================
+
+    import sys
+    sys.getrecursionlimit()  # 1000 by default
+    fib_memo(5000)           # RecursionError
+    fib_table(5000)          # fine: a number with 1045 digits
+
+Memoization recurses n levels deep. sys.setrecursionlimit can raise
+the limit, but very deep recursion can still crash the interpreter,
+so for large n the bottom-up loop is the reliable fix.
+
+B.4 Hand-trace exercise (2 minutes)
+===================================
+
+Ask: when fib_memo(5) runs, in what order are entries ADDED to the
+memo dict? Students often answer 5, 4, 3, 2. The real order is
+2, 3, 4, 5: the recursion dives down to the base cases first, and
+results are stored on the way back up. So top-down code still fills
+the table bottom-up, which is a good bridge to slide 7.
 
 ----------------------------------------------------------------------
 SLIDE 9 OF 23
@@ -408,6 +613,71 @@ Speaker notes:
   coins? Answer: replace min with a sum, set ways[0] = 1, and loop
   over coins in the outer loop so that each combination is counted
   once and not once per ordering. That is about 32 minutes in.
+
+----------------------------------------------------------------------
+EXPANSION C: COUNTING WAYS: COMBINATIONS VS. ORDERINGS
+----------------------------------------------------------------------
+
+[2.5-hour plan · after slide 12 · 0:48-0:54, 6 minutes]
+
+Change the question on slide 10: instead of the fewest coins, how
+many ways are there to make 6 from coins [1, 3, 4]? That depends on
+whether order matters, and the only difference in the code is which
+loop is on the outside.
+
+C.1 Two versions, one swap
+==========================
+
+    def count_combinations(coins, amount):
+        ways = [1] + [0] * amount       # one way to make 0
+        for c in coins:                 # coins outside
+            for a in range(c, amount + 1):
+                ways[a] += ways[a - c]
+        return ways[amount]
+
+    def count_sequences(coins, amount):
+        ways = [1] + [0] * amount
+        for a in range(1, amount + 1):  # amounts outside
+            for c in coins:
+                if c <= a:
+                    ways[a] += ways[a - c]
+        return ways[amount]
+
+    count_combinations([1, 3, 4], 6)  # 4
+    count_sequences([1, 3, 4], 6)     # 9
+
+The 4 combinations are 1+1+1+1+1+1, 1+1+1+3, 1+1+4 and 3+3. The 9
+sequences count 1+1+4, 1+4+1 and 4+1+1 separately, and so on.
+
+C.2 Why the loop order matters
+==============================
+
+* Coins outside
+    When coin c is processed, ways[] only knows about coins earlier
+    in the list. Every combination is built in one fixed order
+    (all 1s, then 3s, then 4s), so it is counted once.
+* Amounts outside
+    For each amount, the last coin can be any coin, and the rest
+    can be anything. 1+4 and 4+1 have different last coins, so both
+    are counted.
+
+The table after each coin (coins outside):
+
+Amount          0  1  2  3  4  5  6
+--------------  -  -  -  -  -  -  -
+coin 1 only     1  1  1  1  1  1  1
+coins 1, 3      1  1  1  2  2  2  3
+coins 1, 3, 4   1  1  1  2  3  3  4
+
+Sequences       1  1  1  2  4  6  9
+
+Ask students to check one cell by listing: ways to make 4 as
+sequences are 1+1+1+1, 1+3, 3+1 and 4, so 4.
+
+Teaching notes:
+  This is the "loop direction matters" idea of discussion section 7
+  in its first form. Students who meet both versions here find the
+  0/1 vs. unbounded knapsack loops on slide 32 much easier.
 
 ----------------------------------------------------------------------
 SLIDE 13 OF 23
@@ -565,6 +835,77 @@ Speaker notes:
   and for LCS next. About 44 minutes in.
 
 ----------------------------------------------------------------------
+EXPANSION D: IN-CLASS EXERCISE: EQUAL-SUM PARTITION
+----------------------------------------------------------------------
+
+[2.5-hour plan · after slide 16 · 1:05-1:13, 8 minutes]
+
+D.1 The problem (give students 3 minutes)
+=========================================
+
+Can [1, 5, 11, 5] be split into two groups with the same sum? Ask
+students to do only steps 1 and 2 of the recipe: define the
+subproblem and write the recurrence.
+
+D.2 The solution
+================
+
+The total is 22, so each group must sum to 11. The question becomes:
+is there a subset that sums to exactly 11? That is a knapsack in
+which each item's value equals its weight, and we only ask yes or
+no.
+
+    Subproblem: can[s] = True if some subset of the numbers seen so
+                far adds up to exactly s
+    Recurrence: can[s] = can[s] or can[s - x], for each number x
+    Base case:  can[0] = True (the empty subset)
+    Order:      numbers one at a time; s downward (each number once)
+    Answer:     can[total // 2]
+
+    def can_partition(nums):
+        total = sum(nums)
+        if total % 2:
+            return False            # an odd total cannot split
+        half = total // 2
+        can = [True] + [False] * half
+        for x in nums:
+            for s in range(half, x - 1, -1):
+                if can[s - x]:
+                    can[s] = True
+        return can[half]
+
+    can_partition([1, 5, 11, 5])  # True: {11} and {1, 5, 5}
+    can_partition([1, 2, 3, 5])   # False: the total 11 is odd
+
+D.3 Trace on the board
+======================
+
+Reachable sums (up to 11) after each number:
+
+After  Reachable sums
+-----  ---------------------
+start  0
+1      0, 1
+5      0, 1, 5, 6
+11     0, 1, 5, 6, 11
+5      0, 1, 5, 6, 10, 11
+
+11 is reachable, so the answer is yes. It already became reachable
+after the third number (11 on its own).
+
+Teaching notes:
+  Collect a few student recurrences before showing D.2; wrong ones
+  usually loop s upward, which uses a number twice. That makes a
+  good lead-in to discussion section 7.3 later.
+
+----------------------------------------------------------------------
+BREAK (2.5-hour plan · 1:13-1:23, 10 minutes)
+----------------------------------------------------------------------
+
+Slides 17-19 (LCS) restart the class at 1:23. Expansions E and F
+follow slide 19, before the multidimensional discussion.
+
+----------------------------------------------------------------------
 SLIDE 17 OF 23
 ----------------------------------------------------------------------
 
@@ -685,11 +1026,184 @@ Speaker notes:
   in.
 
 ----------------------------------------------------------------------
+EXPANSION E: WORKED EXAMPLE: EDIT DISTANCE
+----------------------------------------------------------------------
+
+[2.5-hour plan · after slide 19 · 1:31-1:40, 9 minutes]
+
+This is practice problem 2 from slide 22, worked in full. It has the
+same table shape as LCS, so it reinforces slides 17-19 right after
+them.
+
+E.1 The recurrence
+==================
+
+The edit distance between two words is the fewest single-letter
+inserts, deletes and substitutions that turn one into the other.
+
+    Subproblem: d[i][j] = edit distance from a[:i] to b[:j]
+    Base cases: d[i][0] = i (delete all i letters)
+                d[0][j] = j (insert all j letters)
+    Recurrence: if a[i-1] == b[j-1]: d[i][j] = d[i-1][j-1]
+                otherwise d[i][j] = 1 + min(
+                    d[i-1][j],      # delete a[i-1]
+                    d[i][j-1],      # insert b[j-1]
+                    d[i-1][j-1])    # substitute a[i-1] -> b[j-1]
+
+E.2 The table for "kitten" to "sitting"
+=======================================
+
+       -  s  i  t  t  i  n  g
+    -  0  1  2  3  4  5  6  7
+    k  1  1  2  3  4  5  6  7
+    i  2  2  1  2  3  4  5  6
+    t  3  3  2  1  2  3  4  5
+    t  4  4  3  2  1  2  3  4
+    e  5  5  4  3  2  2  3  4
+    n  6  6  5  4  3  3  2  3
+
+The answer is the bottom-right cell: 3. Fill a few cells with the
+class. Row k, column s: the letters differ, so 1 + min(1, 1, 0) = 1
+(substitute). Row i, column i: the letters match, so copy the
+diagonal: 1.
+
+E.3 Code with trace back
+========================
+
+    def edit_table(a, b):
+        m, n = len(a), len(b)
+        d = [[0] * (n + 1) for _ in range(m + 1)]
+        for i in range(m + 1):
+            d[i][0] = i
+        for j in range(n + 1):
+            d[0][j] = j
+        for i in range(1, m + 1):
+            for j in range(1, n + 1):
+                if a[i - 1] == b[j - 1]:
+                    d[i][j] = d[i - 1][j - 1]
+                else:
+                    d[i][j] = 1 + min(d[i - 1][j], d[i][j - 1],
+                                      d[i - 1][j - 1])
+        return d
+
+    def edit_ops(a, b):
+        d = edit_table(a, b)
+        i, j, ops = len(a), len(b), []
+        while i > 0 or j > 0:
+            same = i > 0 and j > 0 and a[i - 1] == b[j - 1]
+            if same and d[i][j] == d[i - 1][j - 1]:
+                i, j = i - 1, j - 1                  # keep it
+            elif i > 0 and j > 0 and d[i][j] == d[i - 1][j - 1] + 1:
+                ops.append(f"substitute {a[i - 1]} -> {b[j - 1]}")
+                i, j = i - 1, j - 1
+            elif i > 0 and d[i][j] == d[i - 1][j] + 1:
+                ops.append(f"delete {a[i - 1]}")
+                i -= 1
+            else:
+                ops.append(f"insert {b[j - 1]}")
+                j -= 1
+        return ops[::-1]
+
+    edit_ops("kitten", "sitting")
+    # ['substitute k -> s', 'substitute e -> i', 'insert g']
+
+Time and space are O(m·n), like LCS. Spell checkers and DNA
+comparison use this distance; diff tools use a close relative.
+
+Teaching notes:
+  Ask what changes from LCS: the base row and column are no longer
+  0, a match costs 0 instead of adding 1, and min replaces max. The
+  same trace-back idea as slide 16 recovers the actual edits.
+
+----------------------------------------------------------------------
+EXPANSION F: INTERVAL DP: MATRIX-CHAIN MULTIPLICATION
+----------------------------------------------------------------------
+
+[2.5-hour plan · after expansion E · 1:40-1:47, 7 minutes]
+
+Slide 20 lists interval DP as a common shape but the lecture never
+shows one. This is the standard example.
+
+F.1 The problem
+===============
+
+Multiplying a p x q matrix by a q x r matrix takes p·q·r
+multiplications. For a chain of matrices, the answer is the same in
+any grouping, but the cost is not. With shapes A: 10 x 30,
+B: 30 x 5 and C: 5 x 60:
+
+    (A B) C = 10·30·5 + 10·5·60  =  1,500 +  3,000 =  4,500
+    A (B C) = 30·5·60 + 10·30·60 =  9,000 + 18,000 = 27,000
+
+Six times the work for the wrong grouping. With n matrices there
+are exponentially many groupings, so we need DP.
+
+F.2 The recurrence
+==================
+
+    Subproblem: m[i][j] = fewest multiplications to compute the
+                product of matrices i through j
+    Base case:  m[i][i] = 0 (one matrix, nothing to do)
+    Recurrence: m[i][j] = min over i <= k < j of
+                m[i][k] + m[k+1][j] + p[i-1]·p[k]·p[j]
+                (split after matrix k, then multiply the two halves)
+    Order:      by chain length, shortest first, since each cell
+                needs only shorter intervals
+    Answer:     m[1][n]
+
+The fill order is the new idea: not row by row, but diagonal by
+diagonal, from length 2 up to length n.
+
+    def matrix_chain(p):
+        """Matrix i has shape p[i-1] x p[i], for i = 1..n."""
+        n = len(p) - 1
+        m = [[0] * (n + 1) for _ in range(n + 1)]
+        for length in range(2, n + 1):      # shorter chains first
+            for i in range(1, n - length + 2):
+                j = i + length - 1
+                m[i][j] = min(
+                    m[i][k] + m[k + 1][j] + p[i - 1] * p[k] * p[j]
+                    for k in range(i, j))
+        return m[1][n]
+
+    matrix_chain([10, 30, 5, 60])        # 4500
+    matrix_chain([40, 20, 30, 10, 30])   # 26000
+
+F.3 The table for four matrices
+===============================
+
+For shapes 40 x 20, 20 x 30, 30 x 10 and 10 x 30:
+
+m[i][j]  j=1   j=2     j=3     j=4
+-------  ---   ------  ------  ------
+i=1      0     24000   14000   26000
+i=2            0       6000    12000
+i=3                    0       9000
+i=4                            0
+
+The best grouping is (A1 (A2 A3)) A4: 6000 + 8000 + 12000 = 26000.
+There are n^2/2 cells and each tries up to n splits: O(n^3) time.
+
+F.4 Another interval DP
+=======================
+
+The longest palindromic subsequence uses the same shape:
+L[i][j] = L[i+1][j-1] + 2 if s[i] == s[j], else
+max(L[i+1][j], L[i][j-1]), filled by length. For "BBABCBCAB" it
+is 7 ("BABCBAB"). Good homework, since students can check it by
+hand.
+
+Teaching notes:
+  Draw the triangle of cells and shade the diagonals in the order
+  they are filled. This picture is what discussion section 4 means
+  by "loop over the interval length first".
+
+----------------------------------------------------------------------
 DISCUSSION: MULTIDIMENSIONAL DYNAMIC PROGRAMMING
 ----------------------------------------------------------------------
 
-[Extension after slide 19 · sections 1-6 about 15 minutes,
- sections 7-8 about 30 minutes more]
+[Extension after slide 19 · slides 24-43 · 2.5-hour plan: 1:47-2:30,
+ see the lecture plan for shorter versions]
 
 This discussion builds on the knapsack and LCS tables. Use it right
 after slide 19 if time allows, or as the start of a follow-up class.
@@ -1606,6 +2120,42 @@ Speaker notes:
   earlier j with a smaller value; one answer is 2, 3, 7, 18, length 4.
   Solutions for all three are in dynamic_programming_examples.py.
   These work well as an in-class lab or optional homework.
+
+----------------------------------------------------------------------
+EXPANSION G: WRITING UP A DP SOLUTION (HANDOUT)
+----------------------------------------------------------------------
+
+[Handout or homework guide · no class time]
+
+A complete DP answer on homework or an exam has seven parts. Most
+lost points come from leaving out part 1 or part 6.
+
+1. Subproblem: what one table entry means, in a full sentence.
+2. Recurrence: the formula, with every case.
+3. Base cases.
+4. Evaluation order: why each entry's dependencies are ready.
+5. Where the final answer is in the table.
+6. Running time and space: states x work per state, with the
+   numbers filled in.
+7. Correctness, in a few sentences: why the recurrence considers
+   every possible last choice.
+
+A sample answer: count the ways to climb n stairs taking 1 or 2
+steps at a time.
+
+    1. ways[i] = the number of different step sequences that reach
+       stair i exactly.
+    2. ways[i] = ways[i-1] + ways[i-2] for i >= 2.
+    3. ways[0] = 1 (the empty sequence) and ways[1] = 1.
+    4. Increasing i: ways[i] needs only the two entries before it.
+    5. ways[n].
+    6. n + 1 states, O(1) work each: O(n) time. O(n) space, or O(1)
+       with two variables.
+    7. Every sequence that reaches stair i ends with a 1-step from
+       stair i-1 or a 2-step from stair i-2, never both, so the two
+       counts add with no overlap and nothing is missed.
+
+    For n = 5 the table is 1, 1, 2, 3, 5, 8, so there are 8 ways.
 
 ----------------------------------------------------------------------
 SLIDE 23 OF 23
